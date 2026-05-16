@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-science-tcb"
+version = "0.1.0"
+description = "Multi-horizon direction prediction for Techcombank (TCB, HOSE) — academic project"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "Đặng Hữu Khanh" }
+]
+keywords = ["time-series", "stock-prediction", "techcombank", "walk-forward", "vietnam"]
+
+[project.urls]
+Repository = "https://github.com/HuuKhanh19/Data-Science"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]  # line too long — managed by black
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]

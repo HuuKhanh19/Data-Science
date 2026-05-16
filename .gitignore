@@ -1,0 +1,89 @@
+# =====================================================
+# Python
+# =====================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# =====================================================
+# Virtual environments
+# =====================================================
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# =====================================================
+# Testing & coverage
+# =====================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+
+# =====================================================
+# Jupyter
+# =====================================================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+.jupyter/
+
+# =====================================================
+# IDE
+# =====================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# =====================================================
+# Environment variables
+# =====================================================
+.env
+.env.local
+.env.*.local
+
+# =====================================================
+# Project data — never commit raw data or generated artifacts
+# =====================================================
+data/raw/*
+!data/raw/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+
+data/db/*
+!data/db/.gitkeep
+
+# Model weights (large binary, regenerable from training)
+*.pkl
+*.pt
+*.pth
+*.h5
+*.onnx
+models_artifacts/
+
+# =====================================================
+# Logs
+# =====================================================
+*.log
+logs/
+
+# =====================================================
+# OS
+# =====================================================
+.AppleDouble
+.LSOverride
+desktop.ini

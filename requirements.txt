@@ -1,0 +1,57 @@
+# =====================================================
+# Data Science TCB — pinned dependencies
+# Python 3.11 required
+# =====================================================
+# Pin philosophy: lower bound enforces required features,
+# upper bound prevents breaking major upgrades during project lifetime.
+# Final lock with exact versions at end of Phase 0 (Tuần 2).
+
+# -----------------------------------------------------
+# Core numerical / data
+# -----------------------------------------------------
+numpy>=2.0,<3.0
+pandas>=2.2,<3.0
+scipy>=1.13,<2.0
+pyarrow>=17.0,<19.0
+
+# -----------------------------------------------------
+# Machine learning
+# -----------------------------------------------------
+scikit-learn>=1.5,<2.0
+# torch: install separately with CUDA index URL if GPU needed; see README.
+# This pin is the CPU build from PyPI. Override locally as needed.
+torch>=2.4
+shap>=0.46,<1.0
+
+# -----------------------------------------------------
+# Statistics
+# -----------------------------------------------------
+statsmodels>=0.14,<1.0
+arch>=7.0,<8.0       # Stationary bootstrap (Politis-Romano 1994)
+
+# -----------------------------------------------------
+# Data sources (Vietnamese stock + global FX)
+# -----------------------------------------------------
+vnstock>=3.2          # v3 API: Vnstock().stock(symbol=..., source='VCI').quote.history(...)
+yfinance>=0.2,<1.0
+
+# -----------------------------------------------------
+# Production / web
+# -----------------------------------------------------
+sqlalchemy>=2.0,<3.0
+streamlit>=1.35,<2.0
+
+# -----------------------------------------------------
+# Dev / EDA — kept in main file for simplicity (academic project)
+# -----------------------------------------------------
+pytest>=8.0
+jupyter>=1.0
+ipykernel>=6.0
+matplotlib>=3.8
+seaborn>=0.13
+tqdm>=4.66
+
+# -----------------------------------------------------
+# Optional but recommended
+# -----------------------------------------------------
+python-dotenv>=1.0    # Read .env for any secrets (none expected, but useful)
