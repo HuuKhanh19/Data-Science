@@ -18,9 +18,8 @@ pyarrow>=17.0,<19.0
 # Machine learning
 # -----------------------------------------------------
 scikit-learn>=1.5,<2.0
-# torch: install separately with CUDA index URL if GPU needed; see README.
-# This pin is the CPU build from PyPI. Override locally as needed.
-torch>=2.4
+# torch: managed by conda (CUDA build). Do NOT install torch via pip in this env.
+# See README "Setup" section for conda install commands.
 shap>=0.46,<1.0
 
 # -----------------------------------------------------
@@ -34,6 +33,13 @@ arch>=7.0,<8.0       # Stationary bootstrap (Politis-Romano 1994)
 # -----------------------------------------------------
 vnstock>=3.2          # v3 API: Vnstock().stock(symbol=..., source='VCI').quote.history(...)
 yfinance>=0.2,<1.0
+
+# vnstock v4+ requires a charting backend to import (design quirk of upstream lib).
+# Install separately from vnstock's private index (NOT on PyPI):
+#   pip install --extra-index-url https://vnstocks.com/api/simple vnstock_chart
+# Fallback option (PyPI but historically has packaging bugs):
+#   pip install vnstock_ezchart squarify wordcloud mplfinance
+# We don't pin either here because the official one is off-PyPI; user installs once.
 
 # -----------------------------------------------------
 # Production / web

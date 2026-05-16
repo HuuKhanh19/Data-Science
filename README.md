@@ -29,33 +29,27 @@ Hai tài liệu thiết kế nằm ở root repo:
 ## Setup
 
 ### Yêu cầu
-- Python 3.11 (pin trong `pyproject.toml`)
+- Conda (Anaconda hoặc Miniconda) — recommended cho project có CUDA
+- Python 3.11 (trong conda env `ds`)
 - Git
-- Khuyến nghị: GPU NVIDIA + CUDA cho LSTM training (deterministic mode, dùng được CPU nhưng chậm)
+- GPU NVIDIA + CUDA driver (cho LSTM training; CPU fallback hoạt động nhưng chậm)
 
 ### Cài đặt
 
-```bash
+```powershell
 git clone https://github.com/HuuKhanh19/Data-Science.git
 cd Data-Science
-
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# Linux/Mac:
-source .venv/bin/activate
-
-pip install --upgrade pip
-pip install -r requirements.txt
 ```
 
-### Cài đặt PyTorch với CUDA (Windows + CUDA 12.x)
 
-`requirements.txt` pin `torch>=2.4` từ PyPI (CPU). Nếu cần CUDA build, cài riêng theo hướng dẫn chính thức:
+#### Fresh env
 
-```bash
-# Ví dụ cho CUDA 12.4 (backward-compatible với driver 12.9):
-pip install torch --index-url https://download.pytorch.org/whl/cu124
+```powershell
+conda create -n ds python=3.11 -y
+conda activate ds
+# Install PyTorch với CUDA — adjust cuda version theo driver
+conda install pytorch pytorch-cuda=12.4 -c pytorch -c nvidia -y
+pip install -r requirements.txt
 ```
 
 Verify CUDA hoạt động:
@@ -66,8 +60,10 @@ print(torch.cuda.is_available(), torch.cuda.device_count())
 
 ### Kiểm tra setup
 
-```bash
+```powershell
+conda activate ds
 python -c "import numpy, pandas, sklearn, torch, vnstock, yfinance; print('OK')"
+python -c "import torch; print('CUDA available:', torch.cuda.is_available(), 'devices:', torch.cuda.device_count())"
 pytest tests/  # all tests should pass (chưa có test ở thời điểm bootstrap)
 ```
 
