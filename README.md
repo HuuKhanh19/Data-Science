@@ -41,8 +41,18 @@ git clone https://github.com/HuuKhanh19/Data-Science.git
 cd Data-Science
 ```
 
+#### Option A — Clone base env (nếu base có Python 3.11.x + torch CUDA)
 
-#### Fresh env
+```powershell
+conda activate base
+python --version    # confirm 3.11.x
+
+conda create -n ds --clone base -y
+conda activate ds
+pip install -r requirements.txt
+```
+
+#### Option B — Fresh env
 
 ```powershell
 conda create -n ds python=3.11 -y
