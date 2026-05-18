@@ -145,8 +145,7 @@ Mỗi feature có citation methodology rõ ràng từ literature tham khảo.
 | Tên | Định nghĩa | Citation |
 |---|---|---|
 | MA Crossover ratio | $\mathrm{MA}_5(P) / \mathrm{MA}_{20}(P)$ | Brock, Lakonishok & LeBaron (1992), Journal of Finance |
-| Momentum 3-12mo | $\log(P_{t-1}/P_{t-252})$ với cắt window 63 phiên đầu | Jegadeesh & Titman (1993), Journal of Finance |
-| Bollinger Band position | $\frac{P_{t-1} - \mathrm{MA}_{20}}{2\sigma_{20}}$ | Fang, Jacobsen & Qin (2014) |
+| Momentum 3-12mo | $\log(P_{t-63}/P_{t-252})$ (skip 63 phiên gần nhất ≈ 3 tháng để tránh short-term reversal contamination) | Jegadeesh & Titman (1993), Journal of Finance || Bollinger Band position | $\frac{P_{t-1} - \mathrm{MA}_{20}}{2\sigma_{20}}$ | Fang, Jacobsen & Qin (2014) |
 | Trading Range Breakout | $\mathbb{1}[P_{t-1} > \max_{i=t-21}^{t-2}(P_i)] - \mathbb{1}[P_{t-1} < \min_{i=t-21}^{t-2}(P_i)] \in \{-1, 0, 1\}$ | Brock, Lakonishok & LeBaron (1992) |
 | RSI(14) | $100 - \frac{100}{1 + RS}$, $RS = \frac{\bar{G}_{14}}{\bar{L}_{14}}$ | Panigrahi et al. (2021), NIFTY-50 |
 | MACD normalized | $\frac{\mathrm{EMA}_{12}(P) - \mathrm{EMA}_{26}(P)}{P_{t-1}}$ | Wang & Kim (2018) |

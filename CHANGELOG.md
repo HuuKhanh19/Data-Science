@@ -5,6 +5,32 @@ Semantic versioning: x.y.z (x = major methodology change, y = feature, z = fix).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-18
+
+### Added
+- `src/features/l1_price.py`: 4 lag log-return features (r_lag1, r_cum5, r_cum10, r_cum20) per research_design.md §4.1. Anti-leak by construction: every feature at day t uses only P_{t-1} and earlier via `log_p.shift(1) - log_p.shift(1+k)` pattern.
+- `src/features/l2_technical.py`: 6 technical indicators per research_design.md §4.2 — `ma_crossover` (MA_5/MA_20), `momentum_12_3` (J-T skip-3), `bb_position` (Bollinger, ddof=0), `trb_signal` (∈ {-1, 0, 1, NaN}), `rsi14` (Wilder 1978 canonical smoothing), `macd_norm` (EMA fast/slow normalized by price). All anti-leak shifted.
+- `tests/test_l1_price.py`: 15 tests (Tier 2 golden + Tier 1 anti-leak).
+- `tests/test_l2_technical.py`: 31 tests (per-indicator golden values + edge cases + global anti-leak).
+- `docs/session03_l1_l2_features.md`: session log per 7-section template.
+
+### Changed
+- `research_design.md §4.2`: Momentum 3-12mo formula clarified from $\log(P_{t-1}/P_{t-252})$ to $\log(P_{t-63}/P_{t-252})$ per decision D7=B (Session 3 prologue). Skip-3 J-T canonical convention matches the "3-12 month" naming and "cắt 63 phiên" wording. Pre-lock fix, no version bump required.
+
+### Decisions locked (Session 3)
+- **D1**: 2 separate files `l1_price.py` + `l2_technical.py` per IMPLEMENTATION.md §3 folder structure.
+- **D2**: NaN trong warmup, không drop rows ở function level (downstream walk-forward iterator handles).
+- **D3**: Default `price_col="adj_close"` (semantic-correct per research_design §4.1).
+- **D4**: Strict anti-leak P_{t-1} backward, verified end-to-end.
+- **D5**: RSI(14) Wilder (1978) canonical (manual implementation), không dùng `pandas.ewm` default (init differs).
+- **D6**: MACD EMA với `adjust=False, min_periods=26`.
+- **D7**: Momentum 3-12mo = $\log(P_{t-63}/P_{t-252})$ (skip-3 J-T). Direct empirical proof via `test_momentum_12_3_anti_leak_recent_63_days_dont_affect`.
+- **TA-Lib cross-check**: not used. Source of truth = hand-computed golden values from research_design.md citation formulas.
+
+### Verified
+- Tests: **46 passed** (15 L1 + 31 L2). Full suite (Sessions 2+3): 70/70.
+- Coverage: **100%** trên `src/features/l1_price.py`, **100%** trên `src/features/l2_technical.py`.
+
 ## [0.3.0] - 2026-05-18
 
 ### Added
