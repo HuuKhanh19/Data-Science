@@ -16,7 +16,8 @@ Tài liệu append-only ghi lại process của mỗi session implementation. Kh
 | Session | File | Phase | Status |
 |---|---|---|---|
 | 01 | [session01_data_acquisition.md](session01_data_acquisition.md) | Phase 1 + Phase 0 partial | ✅ Complete |
-| 02 | (planned) `session02_asof_join.md` | Phase 1 | 🔄 Next |
+| 02 | [session02_asof_join.md](session02_asof_join.md) | Phase 1 | ✅ Complete |
+| 03 | (planned) `session03_loaders_and_macro_acquisition.md` | Phase 1 | 🔄 Next |
 
 ## Template structure (7 sections)
 

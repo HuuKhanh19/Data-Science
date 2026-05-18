@@ -288,31 +288,44 @@ CREATE INDEX idx_actuals_date ON actuals(prediction_date);
 
 **Contract** (`src/data/asof_join.py`):
 ```python
-def asof_join_quarterly(
-    daily_df: pd.DataFrame,       # DatetimeIndex daily
-    quarterly_df: pd.DataFrame,   # cols: release_date + value_cols
+def asof_join(
+    daily_df: pd.DataFrame,             # DatetimeIndex daily
+    low_freq_df: pd.DataFrame,          # cols: release_date_col + value_cols
     value_cols: list[str],
+    release_date_col: str = "release_date",
 ) -> pd.DataFrame:
     """
-    Join quarterly_df vào daily_df theo as-of release_date.
+    As-of join low-frequency data vào daily DataFrame.
 
     Cho mỗi row tại date t trong daily_df:
-        Lấy giá trị từ row của quarterly_df với release_date ≤ t lớn nhất.
+        Lấy giá trị từ row của low_freq_df với release_date ≤ t lớn nhất.
 
-    Returns daily_df với value_cols được merge in.
+    Returns daily_df với value_cols được merge in. release_date_col
+    bị DROP khỏi output (decision Session 2 D3 — tránh accidentally
+    consumed làm feature downstream).
 
     Quan trọng:
-        - Sort quarterly_df theo release_date trước khi join
-        - Nếu không có quarterly row nào có release_date ≤ t, value = NaN
-        - Forward-fill bằng release_date, KHÔNG bằng reference_period
+        - release_date_col PHẢI là publication date, NOT reference_period_end.
+        - Duplicate release_dates → raise ValueError (D2, không silent dedup).
+        - Rows tại t < earliest release_date → NaN trong value_cols.
+        - Past latest release_date → forward-fill latest value indefinitely.
+        - Coerce right join key về dtype của left để tương thích pandas 2.x.
+
+    Thin wrappers cho call-site clarity (identical behaviour):
+        asof_join_quarterly(daily_df, quarterly_df, value_cols, release_date_col)
+        asof_join_monthly(daily_df, monthly_df, value_cols, release_date_col)
     """
 ```
 
 **Test bắt buộc** (`tests/test_asof_join.py`):
-- Test row tại t < earliest release_date → NaN
-- Test row tại t ngay sau release_date → giá trị từ row đó
-- Test row tại t giữa hai release_dates → giá trị của earlier release
-- Test với synthetic data có release_date trễ 100 ngày sau reference_period → assert join không bao giờ dùng reference_period
+24 tests, 100% line coverage. Critical Tier 1 cases:
+- t < earliest release_date → NaN
+- t == release_date → row đó (≤ inclusive)
+- t giữa hai release_dates → earlier release
+- Synthetic 100-day lag chứng minh không dùng `reference_period`
+- Property test 100 random dates vs manual oracle
+
+Session log: `docs/session02_asof_join.md`.
 
 ### 5.2 Walk-forward iterator
 

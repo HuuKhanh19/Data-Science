@@ -61,3 +61,4 @@ tqdm>=4.66
 # Optional but recommended
 # -----------------------------------------------------
 python-dotenv>=1.0    # Read .env for any secrets (none expected, but useful)
+pytest-cov>=4.0

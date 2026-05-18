@@ -5,6 +5,32 @@ Semantic versioning: x.y.z (x = major methodology change, y = feature, z = fix).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-18
+
+### Added
+- `src/data/asof_join.py`: anti-leakage primitive merge dữ liệu lower-frequency (monthly L3 macro, quarterly L3 GDP, quarterly L4 TCB fundamentals) vào panel daily. Core `asof_join` + thin wrappers `asof_join_quarterly` / `asof_join_monthly` (delegation only, identical behavior). Backed by `pd.merge_asof(direction="backward", allow_exact_matches=True)`.
+- `tests/test_asof_join.py`: 24 Tier-1 tests với inline synthetic fixtures. Covers semantics (7), input validation (7), output structure (4), wrapper delegation (2), defensive coverage (4). Critical tests: 100-day-lag anti-leak proof; property test vs manual oracle trên 100 random dates (seed=42).
+- `docs/session02_asof_join.md`: session log theo template 7 sections.
+- `pytest-cov>=4.0` thêm vào `requirements.txt`.
+
+### Changed
+- `IMPLEMENTATION.md §5.1`: contract updated. Function signature thêm `release_date_col: str = "release_date"` param. Unified core `asof_join` API + 2 named wrappers (decision D1). Document drop-on-output behavior (D3) + raise-on-duplicate (D2).
+
+### Decisions locked (Session 2)
+- **D1**: Single core `asof_join` + thin wrappers `asof_join_quarterly` / `asof_join_monthly` (no logic duplication).
+- **D2**: Duplicate `release_date` values → raise `ValueError` (no silent dedup; ambiguity là data-prep issue).
+- **D3**: `release_date` column dropped khỏi output (tránh accidentally consumed làm feature downstream; audit trace preserved qua original `low_freq_df`).
+- **D4**: Past the latest release, latest known value forward-filled indefinitely (matches `pd.merge_asof` default; correct cho production inference).
+- **D5**: No explicit guard chống misuse `release_date_col` (vd pass `reference_period_end`). Docstring warns; Test 6 demonstrates anti-leak property trên synthetic 100-day lag.
+
+### Verified
+- Tests: **24/24 pass** trên Linux (Python 3.12, pandas 2.3) và Windows (Python 3.11.15, conda env `ds`).
+- Coverage: **100%** trên `src/data/asof_join.py` (target 70% per IMPLEMENTATION §8).
+
+### Fixed (cross-version pandas compatibility)
+- `pd.merge_asof` dtype mismatch: pandas 2.x produces `datetime64[us]` từ `pd.bdate_range` nhưng `datetime64[ns]` từ `pd.to_datetime(list_of_strings)`. Coerce right-side join key về dtype của left trước merge. Preserves daily_df's original index dtype trong output. Lossless cho mọi date thực tế.
+- `pd.testing.assert_index_equal` không có kwarg `check_freq` trong một số pandas version; tests chuyển sang `Index.equals()` (lenient về freq metadata).
+
 ## [0.2.0] - 2026-05-16
 
 ### Added
