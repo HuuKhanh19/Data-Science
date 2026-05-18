@@ -199,6 +199,7 @@ range:   2018-06-04 → present. Calendar follows global FX market (5-day max ga
 ```
 columns: reference_period (str, "YYYY-MM"),
          release_date (str, "YYYY-MM-DD"),
+         release_date_source (str, enum: "scraped" | "fallback_14d"),
          cpi_yoy_pct (float),
          sbv_refinancing_rate_pct (float)
 ```
@@ -207,6 +208,7 @@ columns: reference_period (str, "YYYY-MM"),
 ```
 columns: reference_quarter (str, "YYYY-Qn"),
          release_date (str, "YYYY-MM-DD"),
+         release_date_source (str, enum: "scraped" | "fallback_30d"),
          gdp_yoy_pct (float)
 ```
 

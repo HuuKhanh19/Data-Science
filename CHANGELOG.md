@@ -5,6 +5,35 @@ Semantic versioning: x.y.z (x = major methodology change, y = feature, z = fix).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-18
+
+### Added
+- `src/data/loaders.py`: schema-validated CSV loaders. `load_macro_monthly` + `load_macro_quarterly` (L4 `load_tcb_fundamentals` defer Session 5). 8 distinct validation paths: column schema, release_date parse, release_date_source enum, reference_period format, uniqueness (ref_period + release_date), numeric NaN, file errors. Output guaranteed sorted by release_date with datetime64[ns] dtype — ready for direct asof_join.
+- `src/features/l3_macro.py`: 5 L3 macro features per research_design.md §4.3 — `vnindex_return`, `usdvnd_change`, `cpi_yoy_pct`, `sbv_rate_pct`, `gdp_yoy_pct`. Composer + 2 individual functions; CPI/SBV/GDP composed via asof_join (Session 2 primitive).
+- `tests/test_loaders.py`: 20 tests (schema validation paths + happy path + real-world mixed sources).
+- `tests/test_l3_macro.py`: 20 tests (per-feature golden + composer integration + Tier 1 anti-leak).
+- `docs/session04_l3_macro_loaders.md`: session log per 7-section template.
+
+### Changed
+- `IMPLEMENTATION.md §4.1`: added `release_date_source` column to `macro_monthly.csv` and `macro_quarterly.csv` schemas. Enum-validated per frequency (`fallback_14d` for monthly, `fallback_30d` for quarterly). Audit trail for whether publication date was scraped or computed via conservative convention research_design.md §4.3.
+
+### Decisions locked (Session 4)
+- **D1**: Loaders cover L3 only this session; L4 (`tcb_fundamentals.csv`) defer Session 5 to gather real TCB IR data context first.
+- **D2**: L3 module = top-level composer + 2 individual functions (consistent with L1/L2 pattern).
+- **D3**: USD/VND FX alignment via `reindex(method="ffill")` to TCB calendar. FX-closed days → 0 return (semantic "rate unchanged").
+- **D4**: VN-Index alignment via strict `reindex` (no fill) — raise on missing date. VN-Index and TCB share HOSE calendar; mismatch = data quality issue.
+- **D5**: Anti-leak strategy = 2 global mutation tests (daily features + future macro release injection) + per-feature golden values.
+- **D6**: `L3_FEATURE_COLS = ("vnindex_return", "usdvnd_change", "cpi_yoy_pct", "sbv_rate_pct", "gdp_yoy_pct")` — frozen contract.
+- **D7**: `release_date_source` audit column added to schema. Tradeoff: +1 column complexity for permanent audit trail.
+
+### Verified
+- Tests: **40 passed** (20 loaders + 20 L3). Full suite (Sessions 2+3+4): 110/110.
+- Coverage: **100%** trên `src/data/loaders.py` and `src/features/l3_macro.py`.
+
+### Fixed (pandas 2.x compat reinforcement)
+- `_parse_release_date` explicit cast to `datetime64[ns]` after `pd.to_datetime(format="%Y-%m-%d")` — pandas 2.x returns `datetime64[us]` by default which breaks downstream `asof_join` dtype match. Same lesson as Session 2 Issue 1; now applied proactively.
+- Removed dead defensive dtype check in `_coerce_numerics` (`pd.to_numeric(errors="coerce")` always returns float64; the NaN case is caught by `_validate_no_nan_in_numerics` with a clearer message).
+
 ## [0.4.0] - 2026-05-18
 
 ### Added
