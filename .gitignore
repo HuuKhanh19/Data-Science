@@ -1,0 +1,136 @@
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# ============================================================
+# Virtual environments
+# ============================================================
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# ============================================================
+# Conda
+# ============================================================
+# (Conda env 'ds' nằm ngoài repo nên không cần ignore env folder)
+
+# ============================================================
+# Caches & test artifacts
+# ============================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# ============================================================
+# Jupyter
+# ============================================================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ============================================================
+# IDE / Editor
+# ============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.history/
+
+# ============================================================
+# OS
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ============================================================
+# Secrets / environment
+# ============================================================
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+credentials.json
+
+# ============================================================
+# Data files (regeneratable từ scripts/fetch_phase1.py)
+# ============================================================
+# Raw data — ignore parquet & json log, keep folder structure
+data/raw/*.parquet
+data/raw/*.csv
+data/raw/_fetch_log.json
+data/raw/*.log
+
+# Processed features & intermediate
+data/processed/
+data/cache/
+data/interim/
+
+# Keep folder skeletons (commit .gitkeep nếu muốn lưu structure)
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# ============================================================
+# Models & training artifacts
+# ============================================================
+models/
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.h5
+*.onnx
+checkpoints/
+runs/
+
+# ============================================================
+# Database (cho web app sau này)
+# ============================================================
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+logs/
+
+# ============================================================
+# Streamlit
+# ============================================================
+.streamlit/secrets.toml
+
+# ============================================================
+# OS / Windows specific (vì server là Windows)
+# ============================================================
+$RECYCLE.BIN/
+System Volume Information/
