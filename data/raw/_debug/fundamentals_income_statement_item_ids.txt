@@ -1,0 +1,31 @@
+# income_statement: shape=(26, 36)
+# Metadata cols: ['item', 'item_en', 'item_id']
+# Quarter cols (33): ['2018-Q1', '2018-Q2', '2018-Q3', '2018-Q4', '2019-Q1', '2019-Q2', '2019-Q3', '2019-Q4', '2020-Q1', '2020-Q2', '2020-Q3', '2020-Q4', '2021-Q1', '2021-Q2', '2021-Q3', '2021-Q4', '2022-Q1', '2022-Q2', '2022-Q3', '2022-Q4', '2023-Q1', '2023-Q2', '2023-Q3', '2023-Q4', '2024-Q1', '2024-Q2', '2024-Q3', '2024-Q4', '2025-Q1', '2025-Q2', '2025-Q3', '2025-Q4', '2026-Q1']
+
+idx	item_id	item_en	item
+0	net_accounting_profit_loss_before_tax	Net Accounting Profit/(loss) before tax	Tổng lợi nhuận/lỗ trước thuế
+1	business_income_tax_current	Business income tax - current	Chi phí thuế TNDN hiện hành
+2	business_income_tax_deferred	Business income tax - deferred	Chi phí thuế TNDN hoãn lại
+3	business_income_tax_expenses	Business income tax expenses	Chi phí thuế thu nhập doanh nghiệp
+4	net_profit_loss_after_tax	Net profit/(loss) after tax	Lợi nhuận sau thuế
+5	minority_interest	Minority interest	Lợi ích của cổ đông thiểu số
+6	attributable_to_parent_company	Attributable to parent company	Cổ đông của Công ty mẹ
+7	eps_basic_vnd	EPS basic (VND)	Lãi cơ bản trên cổ phiếu (VND)
+8	eps_diluted_vnd	EPS diluted (VND)	Lãi trên cổ phiếu pha loãng (VND)
+9	interest_and_similar_income	Interest and Similar Income	Thu nhập lãi và các khoản thu nhập tương tự
+10	interest_and_similar_expenses	Interest and Similar Expenses	Chi phí lãi và các chi phí tương tự
+11	net_interest_income	Net Interest Income	Thu nhập lãi thuần
+12	fees_and_commission_income	Fees and Commission Income	Thu nhập từ dịch vụ
+13	fees_and_commission_expenses	Fees and Commission Expenses	Chi phí dịch vụ
+14	net_fee_and_commission_income	Net Fee and Commission Income	Lãi/Lỗ thuần từ hoạt động dịch vụ
+15	net_gain_loss_from_foreign_currency_and_gold_dealings	Net gain/(loss) from foreign currency and gold dealings	Lãi/(lỗ) thuần từ hoạt động kinh doanh ngoại hối và vàng
+16	net_gain_loss_from_trading_of_trading_securities	Net gain/(loss) from trading of trading securities	Lãi/(lỗ) thuần từ mua bán chứng khoán kinh doanh
+17	net_gain_loss_from_disposal_of_investment_securities	Net gain/(loss) from disposal of investment securities	Lãi/(lỗ) thuần từ mua bán chứng khoán đầu tư
+18	other_income	Other Income	Thu nhập khác
+19	other_expenses	Other Expenses	Chi phí khác
+20	net_other_income_expenses	Net Other income/expenses	Lãi/(lỗ) thuần từ hoạt động khác
+21	dividends_income	Dividends Income	Thu nhập từ cổ tức
+22	total_operating_income	Total Operating Income	Tổng thu nhập hoạt động
+23	general_and_admin_expenses	General and Admin Expenses	Chi phí quản lý doanh nghiệp
+24	net_operating_profit_before_allowance_for_credit_loss	Net Operating Profit Before Allowance for Credit Loss	Lợi nhuận thuần hoạt động trước khi trích lập dự phòng tổn thất tín dụng
+25	provision_for_credit_losses	Provision for Credit Losses	Trích lập dự phòng tổn thất tín dụng

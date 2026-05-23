@@ -1,0 +1,91 @@
+# balance_sheet: shape=(86, 36)
+# Metadata cols: ['item', 'item_en', 'item_id']
+# Quarter cols (33): ['2018-Q1', '2018-Q2', '2018-Q3', '2018-Q4', '2019-Q1', '2019-Q2', '2019-Q3', '2019-Q4', '2020-Q1', '2020-Q2', '2020-Q3', '2020-Q4', '2021-Q1', '2021-Q2', '2021-Q3', '2021-Q4', '2022-Q1', '2022-Q2', '2022-Q3', '2022-Q4', '2023-Q1', '2023-Q2', '2023-Q3', '2023-Q4', '2024-Q1', '2024-Q2', '2024-Q3', '2024-Q4', '2025-Q1', '2025-Q2', '2025-Q3', '2025-Q4', '2026-Q1']
+
+idx	item_id	item_en	item
+0	cash_and_precious_metals	Cash and precious metals	Tiền mặt, vàng bạc, đá quý
+1	fixed_assets	Fixed assets	Tài sản cố định
+2	tangible_fixed_assets	Tangible fixed assets	Tài sản cố định hữu hình
+3	cost	Cost	Nguyên giá TSCĐ hữu hình
+4	accumulated_depreciation	Accumulated depreciation	Hao mòn TSCĐ hữu hình
+5	finance_leased_assets	Finance leased assets	Tài sản cố định thuê tài chính
+6	cost	Cost	Nguyên giá TSCĐ thuê tài chính
+7	accumulated_depreciation	Accumulated depreciation	Hao mòn TSCĐ thuê tài chính
+8	intangible_fixed_assets	Intangible fixed assets	Tài sản cố định vô hình
+9	cost	Cost	Nguyên giá TSCĐ vô hình
+10	accumulated_amortization	Accumulated amortization	Hao mòn TSCĐ vô hình
+11	investment_properties	Investment properties	Bất động sản đầu tư
+12	historical_cost	Historical cost	Nguyên giá bất động sản đầu tư
+13	accumulated_depreciation	Accumulated depreciation	Hao mòn bất động sản đầu tư
+14	investment_in_other_entities_and_long_term_investments	Investment in other entities and long term investments	Góp vốn, đầu tư dài hạn
+15	investment_in_subsidiaries	Investment in subsidiaries	Đầu tư vào công ty con
+16	investment_in_associate_companies	Investment in associate companies	Đầu tư vào công ty liên doanh
+17	other_long_term_investments	Other Long-term investments	Đầu tư dài hạn khác
+18	provision_for_long_term_investments	Provision for long-term investments	Dự phòng giảm giá đầu tư dài hạn
+19	total_assets	TOTAL ASSETS	TỔNG TÀI SẢN
+20	total_liabilities	TOTAL LIABILITIES	TỔNG NỢ PHẢI TRẢ
+21	owners_equity	OWNER'S EQUITY	VỐN CHỦ SỞ HỮU
+22	charter_capital	Charter capital	Vốn điều lệ
+23	capital_surplus	Capital surplus	Thặng dư vốn cổ phần
+24	owners_other_capital	Owner's other capital	Vốn khác
+25	treasury_shares	Treasury shares	Cổ phiếu Quỹ
+26	difference_upon_assets_revaluation	Difference upon assets revaluation	Chênh lệch đánh giá lại tài sản
+27	foreign_currency_difference_reserve	Foreign currency difference reserve	Chênh lệch tỷ giá hối đoái
+28	retained_earnings	Retained Earnings	Lợi nhuận chưa phân phối
+29	minority_interest_before_2015	Minority interest (Before 2015)	Lợi ích của cổ đông thiểu số (trước 2015)
+30	liabilities_and_shareholders_equity	LIABILITIES AND SHAREHOLDER'S EQUITY	NỢ PHẢI TRẢ VÀ VỐN CHỦ SỞ HỮU
+31	balances_with_the_sbv	Balances with the SBV	Tiền gửi tại Ngân hàng nhà nước Việt Nam
+32	placements_with_and_loans_to_other_credit_institutions	Placements with and loans to other credit institutions	Tiền gửi tại các TCTD khác và cho vay các TCTD khác
+33	trading_securities_net	Trading securities, net	Chứng khoán kinh doanh
+34	trading_securities	Trading securities	Chứng khoán kinh doanh
+35	less_provision_for_diminution_in_value_of_trading_securities	Less: Provision for diminution in value of trading securities	Dự phòng giảm giá chứng khoán kinh doanh
+36	derivatives_and_other_financial_assets	Derivatives and other financial assets	Các công cụ tài chính phái sinh và các tài sản tài chính khác
+37	loans_and_advances_to_customers_net	Loans and advances to customers, net	Cho vay khách hàng
+38	loans_and_advances_to_customers	Loans and advances to customers	Cho vay khách hàng
+39	less_provision_for_losses_on_loans_and_advances_to_customers	Less: Provision for losses on loans and advances to customers	Dự phòng rủi ro cho vay khách hàng
+40	investment_securities	Investment securities	Chứng khoán đầu tư
+41	available_for_sales_securities	Available-for-sales securities	Chứng khoán đầu tư sẵn sàng để bán
+42	held_to_maturity_securities	Held-to-maturity securities	Chứng khoán đầu tư giữ đến ngày đáo hạn
+43	provision_for_diminution_in_value_of_investment_securities	Provision for diminution in value of investment securities	Dự phòng giảm giá chứng khoán đầu tư
+44	other_assets	Other assets	Tài sản Có khác
+45	due_to_gov_and_loans_from_sbv	Due to Gov and Loans from SBV	Các khoản nợ chính phủ và NHNN Việt Nam
+46	deposits_and_loans_from_other_credit_institutions	Deposits and Loans from other credit institutions	Tiền gửi và vay các Tổ chức tín dụng khác
+47	deposits_from_customers	Deposits from customers	Tiền gửi của khách hàng
+48	derivatives_and_other_financial_liabilities	Derivatives and other financial liabilities	Các công cụ tài chính phái sinh và các khoản nợ tài chính khác
+49	funds_received_from_gov_international_and_other_institutions	Funds received from Gov, international and other institutions	Vốn tài trợ, uỷ thác đầu tư của Chính phủ và các tổ chức tín dụng khác
+50	convertible_bonds_cds_and_other_valuable_papers_issued	Convertible bonds/CDs and other valuable papers issued	Phát hành giấy tờ có giá
+51	other_liabilities	Other liabilities	Các khoản nợ khác
+52	capital	Capital	Vốn của tổ chức tín dụng
+53	fund_for_basic_construction	Fund for basic construction	Vốn đầu tư XDCB
+54	preferred_shares	Preferred shares	Cổ phiếu ưu đãi
+55	reserves	Reserves	Quỹ của tổ chức tín dụng
+56	other_guarantee	Other guarantee	Bảo lãnh khác
+57	foreign_exchange_transactions_commitments	Foreign exchange transactions commitments	Cam kết giao dịch hối đoái
+58	foreign_exchange_buying_commitments	Foreign exchange buying commitments	Cam kết mua ngoại tệ
+59	foreign_exchange_selling_commitments	Foreign exchange selling commitments	Cam kết bán ngoại tệ
+60	swap_commitments	Swap commitments	Cam kết giao dịch hoán đổi
+61	future_commitments	Future commitments	Cam kết giao dịch tương lai
+62	irrevocable_loan_commitments	Irrevocable loan commitments	Cam kết cho vay không hủy ngang
+63	letters_of_credit_commitments	Letters of credit commitments	Cam kết trong nghiệp vụ L/C
+64	other_commitments	Other commitments	Cam kết khác
+65	minority_interest	Minority interest	Lợi ích của cổ đông thiểu số
+66	balances_with_other_credit_institutions	Balances with other credit institutions	Tiền gửi tại các TCTD khác
+67	loans_to_other_credit_institutions	Loans to other credit institutions	Cho vay các TCTD khác
+68	allowance_for_balances_with_and_loans_to_other_credit_institutions	Allowance for balances with and loans to other credit institutions	Dự phòng rủi ro
+69	debt_buying	Debt Buying	Hoạt động mua nợ
+70	debt_buying	Debt Buying	Mua nợ
+71	provision_for_losses_on_debt_buying	Provision for losses on debt buying	Dự phòng rủi ro hoạt động mua nợ
+72	other_receivables	Other receivables	Các khoản phải thu
+73	accrued_interest_and_fee_receivables	Accrued interest and fee receivables	Các khoản lãi và phí phải thu
+74	deferred_tax_assets	Deferred tax assets	Tài sản thuế TNDN hoãn lại
+75	other_assets	Other assets	Tài sản Có khác
+76	in_which_goodwill	In which: Goodwill	Trong đó: Lợi thế thương mại
+77	provision_for_other_assets	Provision for other assets	Các khoản dự phòng rủi ro cho các tài sản Có nội bảng khác
+78	deposits_and_loans_from_other_credit_institutions	Deposits and Loans from other credit institutions	Tiền gửi của các tổ chức tín dụng khác
+79	loans_from_other_credit_institutions	Loans from other credit institutions	Vay các tổ chức tín dụng khác
+80	accrued_interest_and_fee_payables	Accrued interest and fee payables	Các khoản lãi, phí phải trả
+81	deferred_tax_liabilities	Deferred tax liabilities	Thuế TNDN hoãn lại phải trả
+82	other_liabilities	Other liabilities	Các khoản phải trả và công nợ khác
+83	allowance_for_other_liabilities	Allowance for other liabilities	Dự phòng rủi ro khác
+84	investments_in_joint_venture	Investments in joint-venture	Vốn Góp liên doanh
+85	investments_in_associates	Investments in associates	Đầu tư vào công ty liên kết
