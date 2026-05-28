@@ -134,3 +134,8 @@ logs/
 # ============================================================
 $RECYCLE.BIN/
 System Volume Information/
+
+# Debug dumps & diagnostic outputs
+data/raw/_debug/
+diagnose_output.txt
+explorer_output.txt 

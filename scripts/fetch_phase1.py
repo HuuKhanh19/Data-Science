@@ -25,7 +25,6 @@ START_DATE = "2018-06-04"
 END_DATE = datetime.now(TZ_VN).date().isoformat()
 
 OUT_DIR = ROOT / "data" / "raw"
-DEBUG_DIR = OUT_DIR / "_debug"
 
 
 def _run_one(name: str, fn: Callable, **kwargs) -> Dict[str, Any]:
@@ -71,18 +70,16 @@ def main() -> int:
         out_path=OUT_DIR / "usdvnd.parquet",
     )
 
-    # Channel B — macro scrapes (with debug_dir for HTML dumps)
+    # Channel B — macro scrapes
     results["cpi"] = _run_one(
         "cpi", fetch_cpi,
         out_path=OUT_DIR / "cpi.parquet",
         start_date=START_DATE, end_date=END_DATE,
-        debug_dir=DEBUG_DIR,
     )
     results["gdp"] = _run_one(
         "gdp", fetch_gdp,
         out_path=OUT_DIR / "gdp.parquet",
         start_date=START_DATE, end_date=END_DATE,
-        debug_dir=DEBUG_DIR,
     )
 
     # Channel C — fundamentals
@@ -90,7 +87,6 @@ def main() -> int:
         "tcb_fundamentals", fetch_tcb_fundamentals,
         out_path=OUT_DIR / "tcb_fundamentals.parquet",
         start_date=START_DATE, end_date=END_DATE,
-        debug_dir=DEBUG_DIR,
     )
 
     log_path = OUT_DIR / "_fetch_log.json"

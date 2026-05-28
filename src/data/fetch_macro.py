@@ -216,7 +216,6 @@ def _parse_nso_page(html: str) -> List[Dict[str, Any]]:
 
 def fetch_cpi(out_path: Path, start_date: str | None = None,
               end_date: str | None = None,
-              debug_dir: Path | None = None,
               verify_ssl: bool = False,
               prehistory_months: int = 13) -> Dict[str, Any]:
     """Scrape NSO CPI press releases.
@@ -259,22 +258,11 @@ def fetch_cpi(out_path: Path, start_date: str | None = None,
 
         pages_fetched += 1
 
-        if debug_dir and page == 1:
-            debug_dir.mkdir(parents=True, exist_ok=True)
-            (debug_dir / "nso_cpi_page1.html").write_text(html, encoding="utf-8")
-
         page_releases = _parse_nso_page(html)
 
         # Edge case A: page có 0 sections (genuinely empty / 404 fallback page)
         if not page_releases:
-            if debug_dir:
-                debug_dir.mkdir(parents=True, exist_ok=True)
-                dump = debug_dir / f"nso_cpi_page{page}_empty.html"
-                dump.write_text(html, encoding="utf-8")
-                print(f"  [cpi] page {page}: 0 sections found - stopping. "
-                      f"Dumped HTML to {dump}")
-            else:
-                print(f"  [cpi] page {page}: 0 sections found - stopping")
+            print(f"  [cpi] page {page}: 0 sections found - stopping")
             break
 
         new_releases = [r for r in page_releases
@@ -283,17 +271,7 @@ def fetch_cpi(out_path: Path, start_date: str | None = None,
         # Edge case B: page có sections nhưng tất cả đã thấy (server fallback
         # returning same content) → stop, dump HTML để inspect
         if not new_releases:
-            if debug_dir:
-                debug_dir.mkdir(parents=True, exist_ok=True)
-                dump = debug_dir / f"nso_cpi_page{page}_dup.html"
-                dump.write_text(html, encoding="utf-8")
-                periods_on_page = sorted({r["reference_period"].date().isoformat()
-                                         for r in page_releases})
-                print(f"  [cpi] page {page}: {len(page_releases)} sections but all "
-                      f"duplicates - stopping. Periods on this page: {periods_on_page}. "
-                      f"Dumped HTML to {dump}")
-            else:
-                print(f"  [cpi] page {page}: {len(page_releases)} sections but all duplicates - stopping")
+            print(f"  [cpi] page {page}: {len(page_releases)} sections but all duplicates - stopping")
             break
 
         all_releases.extend(new_releases)
@@ -316,10 +294,7 @@ def fetch_cpi(out_path: Path, start_date: str | None = None,
     print(f"  [cpi] Done. Total: {len(all_releases)} releases across {pages_fetched} pages")
 
     if not all_releases:
-        raise RuntimeError(
-            "Khong extract duoc CPI tu NSO. Inspect debug HTML at "
-            f"{debug_dir / 'nso_cpi_page1.html' if debug_dir else 'N/A'}"
-        )
+        raise RuntimeError("Khong extract duoc CPI tu NSO (0 releases parsed).")
 
     df = pd.DataFrame(all_releases).sort_values("reference_period").reset_index(drop=True)
     df = df.drop_duplicates(subset=["reference_period"], keep="last").reset_index(drop=True)
@@ -390,8 +365,7 @@ def _parse_vbma_numeric(val: Any) -> float | None:
 
 def fetch_gdp(out_path: Path, start_date: str | None = None,
               end_date: str | None = None,
-              verify_ssl: bool = False,
-              debug_dir: Path | None = None) -> Dict[str, Any]:
+              verify_ssl: bool = False) -> Dict[str, Any]:
     """Fetch GDP từ VBMA TSV endpoint.
 
     Format thực (verified từ Get-Content):
@@ -404,11 +378,6 @@ def fetch_gdp(out_path: Path, start_date: str | None = None,
     print(f"  [gdp] GET TSV: {VBMA_GDP_CSV_URL}")
     csv_bytes = _http_get_bytes(VBMA_GDP_CSV_URL, verify_ssl=verify_ssl)
     print(f"  [gdp] Received {len(csv_bytes)} bytes")
-
-    if debug_dir:
-        debug_dir.mkdir(parents=True, exist_ok=True)
-        (debug_dir / "gdp_raw.csv").write_bytes(csv_bytes)
-        print(f"  [gdp] Dumped raw bytes to {debug_dir}/gdp_raw.csv")
 
     # File là TSV (tab-separated). VBMA encode UTF-16 LE với BOM (\xff\xfe),
     # nên utf-16 phải đứng đầu — utf-8 sẽ raise UnicodeDecodeError, nhưng

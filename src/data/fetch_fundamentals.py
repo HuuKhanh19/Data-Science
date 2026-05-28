@@ -103,25 +103,6 @@ def _normalize_to_billion(values: Dict[pd.Timestamp, float],
     return values
 
 
-def _dump_item_ids(df: pd.DataFrame, name: str, debug_dir: Path) -> None:
-    if df is None or df.empty or "item_id" not in df.columns:
-        return
-    debug_dir.mkdir(parents=True, exist_ok=True)
-    p = debug_dir / f"fundamentals_{name}_item_ids.txt"
-    quarter_cols = [c for c in df.columns if QUARTER_COL_PATTERN.match(str(c).strip())]
-    other_cols = [c for c in df.columns if c not in quarter_cols]
-    with open(p, "w", encoding="utf-8") as f:
-        f.write(f"# {name}: shape={df.shape}\n")
-        f.write(f"# Metadata cols: {other_cols}\n")
-        f.write(f"# Quarter cols ({len(quarter_cols)}): {quarter_cols}\n\n")
-        f.write("idx\titem_id\titem_en\titem\n")
-        for i, row in df.iterrows():
-            iid = str(row.get("item_id", ""))
-            ien = str(row.get("item_en", "")).replace("\t", " ")[:80]
-            it = str(row.get("item", "")).replace("\t", " ")[:80]
-            f.write(f"{i}\t{iid}\t{ien}\t{it}\n")
-
-
 def _fetch_full_history(symbol: str = "TCB") -> Dict[str, pd.DataFrame]:
     """Call private _get_financial_report(get_all=True, limit=100) to unlock full history.
 
@@ -198,8 +179,7 @@ def _fetch_full_history(symbol: str = "TCB") -> Dict[str, pd.DataFrame]:
 def fetch_tcb_fundamentals(out_path: Path,
                            start_date: str | None = None,
                            end_date: str | None = None,
-                           verbose: bool = True,
-                           debug_dir: Path | None = None) -> Dict[str, Any]:
+                           verbose: bool = True) -> Dict[str, Any]:
     """Fetch TCB quarterly fundamentals.
 
     v5: bypass vnstock public 4-quarter limit qua private _get_financial_report
@@ -207,10 +187,6 @@ def fetch_tcb_fundamentals(out_path: Path,
     """
     print("  Calling vnstock VCI Finance API...")
     statements = _fetch_full_history("TCB")
-
-    if debug_dir:
-        for name, df in statements.items():
-            _dump_item_ids(df, name, debug_dir)
 
     field_series: Dict[str, Dict[pd.Timestamp, float]] = {}
     field_meta: Dict[str, str] = {}
