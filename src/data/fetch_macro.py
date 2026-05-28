@@ -1,14 +1,18 @@
-"""Channel B — Macro scrapers (v4).
+"""Channel B - Macro scrapers (v5).
 
-Thay đổi từ v3:
-- CPI: SCRAPE NSO trực tiếp (nso.gov.vn/en/cpi/) với pagination để lấy full
-  history (~96 months). Bỏ hybrid manual+TheGlobalEconomy.
-  Lý do: TheGlobalEconomy data mismatch GSO (3.61% vs 4.65% Mar 2026).
-  NSO là official source.
-- GDP: giữ VBMA CSV endpoint (v3, working).
+Thay đổi từ v4:
+- CPI: lưu RAW TEXT thay vì parse YoY ở Phase 1.
+  + Phase 1 chỉ extract metadata structured (release_date, reference_period, title,
+    source_url) + raw body text của press release.
+  + Phase 2 preprocessing sẽ extract MoM từ raw_text, rồi compute YoY từ chuỗi MoM.
+  + Lý do: separation of concerns — raw layer chỉ collect, không transform.
+  + Pagination: dùng `?paged=N` (verified từ HTML inspect: id='loopage_paged',
+    class='page-numbers'), KHÔNG dùng `/page/N/` (sai trong v4).
+- GDP: VBMA endpoint trả TSV (tab-separated), không phải CSV. Fix sep='\t'.
+  Layout B (cols = quarter labels, row đầu = "Nominal Gross Domestic Product"),
+  values quoted với thousand-separator dạng `"809,613"`.
 
-Anti-leakage: dùng `Date of issue` (DD/MM/YYYY format VN) làm release_date thực
-thay vì conservative `reference_period + 14d`.
+Anti-leakage: dùng `Date of issue` (DD/MM/YYYY) làm release_date thực.
 """
 from __future__ import annotations
 import io
@@ -74,89 +78,138 @@ def _http_get_bytes(url: str, retries: int = 3, timeout: int = DEFAULT_TIMEOUT,
 
 
 # ============================================================
-# CPI - NSO scrape with pagination
+# CPI - NSO scrape, raw text approach
 # ============================================================
 
 NSO_CPI_BASE = "https://www.nso.gov.vn/en/cpi/"
-NSO_PAGE_LIMIT = 25
+NSO_PAGE_LIMIT = 55  # HTML inspect cho thấy có 51 pages → padding nhẹ
 
 MONTH_NAMES_FULL = {
     "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
     "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
 }
 
-# Block: "Date of issue: DD/MM/YYYY ... Reference period: Month YYYY"
-NSO_BLOCK_PATTERN = re.compile(
-    r"Date of issue:\s*(\d{1,2})/(\d{1,2})/(\d{4})"
-    r"\s*Reference period:\s*([A-Za-z]+)\s*(\d{4})",
-    re.IGNORECASE | re.DOTALL,
-)
+# Date of issue: DD/MM/YYYY (Vietnamese format)
+DATE_OF_ISSUE_RE = re.compile(r"Date of issue:\s*(\d{1,2})/(\d{1,2})/(\d{4})")
+# Reference period: Month YYYY (newer format, page 1-4) — e.g. "April 2026"
+REF_PERIOD_TEXT_RE = re.compile(r"Reference period:\s*([A-Za-z]+)\s+(\d{4})")
+# Reference period: M/YYYY (older format, page 5+) — e.g. "8/2024"
+REF_PERIOD_NUM_RE = re.compile(r"Reference period:\s*(\d{1,2})\s*/\s*(\d{4})")
 
-# YoY: "(increased|decreased) by X.XX% compared to (the) same period last year"
-NSO_YOY_PATTERN = re.compile(
-    r"(increase|decrease)d?\s+by\s+(\d+(?:[\.,]\d+)?)\s*%\s+"
-    r"compared\s+to\s+(?:the\s+)?same\s+period\s+last\s+year",
-    re.IGNORECASE,
-)
+
+def _parse_reference_period(text: str) -> tuple[int, int] | None:
+    """Try text format first, then numeric M/YYYY. Returns (month_int, year_int) or None.
+
+    NSO English archive uses 2 formats:
+    - Newer posts (~Oct 2024 onwards): "Reference period: April 2026"
+    - Older posts (~Aug 2024 backwards): "Reference period: 8/2024"
+    """
+    m = REF_PERIOD_TEXT_RE.search(text)
+    if m:
+        month_name = m.group(1).lower()
+        month_num = MONTH_NAMES_FULL.get(month_name)
+        if month_num is not None:
+            return month_num, int(m.group(2))
+    m = REF_PERIOD_NUM_RE.search(text)
+    if m:
+        month = int(m.group(1))
+        if 1 <= month <= 12:
+            return month, int(m.group(2))
+    return None
 
 
 def _parse_nso_page(html: str) -> List[Dict[str, Any]]:
-    """Extract {reference_period, value_pct, release_date} from one NSO page."""
-    soup = BeautifulSoup(html, "lxml")
-    text = soup.get_text(separator=" ", strip=True)
-    text = re.sub(r"\s+", " ", text)
+    """Extract press releases as raw records from one NSO page.
 
-    matches = list(NSO_BLOCK_PATTERN.finditer(text))
-    if not matches:
-        return []
+    Returns list of dict với keys: reference_period, release_date, title, raw_text,
+    source_url. NO YoY/MoM parsing — Phase 2 sẽ làm.
+    """
+    soup = BeautifulSoup(html, "lxml")
+    sections = soup.find_all("section", class_="item")
 
     releases: List[Dict[str, Any]] = []
-    for i, m in enumerate(matches):
-        try:
-            d = int(m.group(1))
-            mo = int(m.group(2))
-            y = int(m.group(3))
-            month_name = m.group(4).lower()
-            ref_year = int(m.group(5))
-        except (ValueError, IndexError):
+    skipped_no_meta = 0
+    skipped_bad_format = 0
+
+    for sec in sections:
+        # Title from <h3>
+        h3 = sec.find("h3")
+        title = h3.get_text(strip=True) if h3 else None
+
+        # All <p> tags: first one(s) = body, last one = metadata span container
+        ps = sec.find_all("p")
+        if not ps:
             continue
 
-        month_num = MONTH_NAMES_FULL.get(month_name)
-        if month_num is None:
+        # Metadata spans (look in any <p> inside section)
+        issue_date_span = sec.find("span", class_="archive-issue-date")
+        ref_period_span = sec.find("span", class_="archive-reference-period")
+        if issue_date_span is None or ref_period_span is None:
+            skipped_no_meta += 1
+            continue
+
+        date_m = DATE_OF_ISSUE_RE.search(issue_date_span.get_text(strip=True))
+        ref_parsed = _parse_reference_period(ref_period_span.get_text(strip=True))
+        if not date_m or ref_parsed is None:
+            skipped_bad_format += 1
             continue
 
         try:
-            # NSO date format: DD/MM/YYYY (Vietnamese)
-            release_date = pd.Timestamp(year=y, month=mo, day=d)
+            day = int(date_m.group(1))
+            month = int(date_m.group(2))
+            year = int(date_m.group(3))
+            release_date = pd.Timestamp(year=year, month=month, day=day)
         except (ValueError, OverflowError):
+            skipped_bad_format += 1
             continue
 
+        month_num, ref_year = ref_parsed
         ref_period_end = (
             pd.Timestamp(year=ref_year, month=month_num, day=1) + pd.offsets.MonthEnd(0)
         )
 
-        body_start = matches[i - 1].end() if i > 0 else 0
-        body_end = m.start()
-        body = text[body_start:body_end]
+        # Body text: lấy các <p> KHÔNG chứa span.archive-* (loại metadata block)
+        body_paragraphs = []
+        for p in ps:
+            if p.find("span", class_="archive-issue-date"):
+                continue
+            txt = p.get_text(separator=" ", strip=True)
+            if txt:
+                body_paragraphs.append(txt)
+        raw_text = "\n".join(body_paragraphs).strip()
 
-        yoy_m = NSO_YOY_PATTERN.search(body)
-        if not yoy_m:
+        if not raw_text:
+            # Fallback: nếu structure khác, dùng cả section text trừ metadata
+            full_txt = sec.get_text(separator=" ", strip=True)
+            for span in (issue_date_span, ref_period_span):
+                full_txt = full_txt.replace(span.get_text(strip=True), "")
+            next_span = sec.find("span", class_="archive-next-release")
+            if next_span:
+                full_txt = full_txt.replace(next_span.get_text(strip=True), "")
+            raw_text = re.sub(r"\s+", " ", full_txt).strip()
+
+        if not raw_text:
+            # Final guard: nếu sau fallback vẫn empty thì skip
             continue
 
-        verb = yoy_m.group(1).lower()
-        val_str = yoy_m.group(2).replace(",", ".")
-        try:
-            val = float(val_str)
-            if verb == "decrease":
-                val = -val
-        except ValueError:
-            continue
+        # Source URL: gần section nhất, tìm <a href> sibling trước đó hoặc parent <a>
+        source_url = None
+        prev = sec.find_previous("a", href=True)
+        if prev and "/data-and-statistics/" in prev.get("href", ""):
+            source_url = prev["href"]
 
         releases.append({
             "reference_period": ref_period_end,
-            "value_pct": val,
             "release_date": release_date,
+            "title": title,
+            "raw_text": raw_text,
+            "source_url": source_url,
         })
+
+    if skipped_bad_format > 0 or skipped_no_meta > 0:
+        print(f"    [parse] {len(releases)} parsed, "
+              f"skipped: {skipped_no_meta} no-meta, "
+              f"{skipped_bad_format} bad-format")
 
     return releases
 
@@ -164,20 +217,40 @@ def _parse_nso_page(html: str) -> List[Dict[str, Any]]:
 def fetch_cpi(out_path: Path, start_date: str | None = None,
               end_date: str | None = None,
               debug_dir: Path | None = None,
-              verify_ssl: bool = False) -> Dict[str, Any]:
-    """Scrape NSO CPI press releases với pagination để lấy full history.
+              verify_ssl: bool = False,
+              prehistory_months: int = 13) -> Dict[str, Any]:
+    """Scrape NSO CPI press releases.
 
-    Pagination: /en/cpi/ (page 1), /en/cpi/page/2/, ...
-    Stops khi 404 hoặc page không có release mới.
+    Pagination: ?paged=N (WordPress query param, verified từ HTML).
+    Phase 1 lưu raw text — Phase 2 sẽ extract MoM/YoY.
+
+    Filter logic:
+    - Phase 2 cần MoM của 12 tháng trước start_date để compute YoY đầu tiên.
+    - prehistory_months=13 (default): lùi 13 tháng = 12 MoM + 1 buffer.
+    - Stop crawling early khi reach data cũ hơn cutoff → tiết kiệm HTTP requests.
+    - Pass prehistory_months=0 để disable buffer (chỉ lấy [start_date, end_date]).
+    - Pass start_date=None để disable filter (lấy hết history).
     """
     print(f"  [cpi] Scraping NSO CPI archive (verify_ssl={verify_ssl})...")
+
+    # Tính cutoff
+    cpi_start_cutoff: pd.Timestamp | None = None
+    cpi_end_cutoff: pd.Timestamp | None = None
+    if start_date is not None:
+        cpi_start_cutoff = pd.Timestamp(start_date) - pd.DateOffset(months=prehistory_months)
+    if end_date is not None:
+        cpi_end_cutoff = pd.Timestamp(end_date)
+    if cpi_start_cutoff is not None:
+        print(f"  [cpi] Cutoff: reference_period >= {cpi_start_cutoff.date()} "
+              f"(= start_date {start_date} - {prehistory_months} months buffer)")
 
     all_releases: List[Dict[str, Any]] = []
     seen_periods: set = set()
     pages_fetched = 0
+    stopped_by_cutoff = False
 
     for page in range(1, NSO_PAGE_LIMIT + 1):
-        url = NSO_CPI_BASE if page == 1 else f"{NSO_CPI_BASE}page/{page}/"
+        url = NSO_CPI_BASE if page == 1 else f"{NSO_CPI_BASE}?paged={page}"
         try:
             html = _http_get(url, verify_ssl=verify_ssl, retries=2)
         except RuntimeError as e:
@@ -191,11 +264,36 @@ def fetch_cpi(out_path: Path, start_date: str | None = None,
             (debug_dir / "nso_cpi_page1.html").write_text(html, encoding="utf-8")
 
         page_releases = _parse_nso_page(html)
+
+        # Edge case A: page có 0 sections (genuinely empty / 404 fallback page)
+        if not page_releases:
+            if debug_dir:
+                debug_dir.mkdir(parents=True, exist_ok=True)
+                dump = debug_dir / f"nso_cpi_page{page}_empty.html"
+                dump.write_text(html, encoding="utf-8")
+                print(f"  [cpi] page {page}: 0 sections found - stopping. "
+                      f"Dumped HTML to {dump}")
+            else:
+                print(f"  [cpi] page {page}: 0 sections found - stopping")
+            break
+
         new_releases = [r for r in page_releases
                         if r["reference_period"] not in seen_periods]
 
+        # Edge case B: page có sections nhưng tất cả đã thấy (server fallback
+        # returning same content) → stop, dump HTML để inspect
         if not new_releases:
-            print(f"  [cpi] page {page}: 0 new releases - stopping")
+            if debug_dir:
+                debug_dir.mkdir(parents=True, exist_ok=True)
+                dump = debug_dir / f"nso_cpi_page{page}_dup.html"
+                dump.write_text(html, encoding="utf-8")
+                periods_on_page = sorted({r["reference_period"].date().isoformat()
+                                         for r in page_releases})
+                print(f"  [cpi] page {page}: {len(page_releases)} sections but all "
+                      f"duplicates - stopping. Periods on this page: {periods_on_page}. "
+                      f"Dumped HTML to {dump}")
+            else:
+                print(f"  [cpi] page {page}: {len(page_releases)} sections but all duplicates - stopping")
             break
 
         all_releases.extend(new_releases)
@@ -203,23 +301,41 @@ def fetch_cpi(out_path: Path, start_date: str | None = None,
         oldest = min(r["reference_period"] for r in new_releases).date()
         newest = max(r["reference_period"] for r in new_releases).date()
         print(f"  [cpi] page {page}: +{len(new_releases)} new "
-              f"(range {oldest} -> {newest}); total: {len(all_releases)}")
+              f"(range {oldest} -> {newest}); cumulative: {len(all_releases)}")
+
+        # Early stop: nếu page hiện tại đã reach data cũ hơn cutoff thì
+        # các page sau toàn data cũ hơn (NSO listing DESC by date) → stop.
+        if cpi_start_cutoff is not None:
+            oldest_ts = pd.Timestamp(oldest)
+            if oldest_ts < cpi_start_cutoff:
+                print(f"  [cpi] Page {page} oldest = {oldest} < cutoff "
+                      f"{cpi_start_cutoff.date()} → stopping (early)")
+                stopped_by_cutoff = True
+                break
 
     print(f"  [cpi] Done. Total: {len(all_releases)} releases across {pages_fetched} pages")
 
     if not all_releases:
         raise RuntimeError(
-            "Không extract được CPI từ NSO. Inspect debug HTML."
+            "Khong extract duoc CPI tu NSO. Inspect debug HTML at "
+            f"{debug_dir / 'nso_cpi_page1.html' if debug_dir else 'N/A'}"
         )
 
     df = pd.DataFrame(all_releases).sort_values("reference_period").reset_index(drop=True)
     df = df.drop_duplicates(subset=["reference_period"], keep="last").reset_index(drop=True)
 
-    if start_date:
-        df = df[df["reference_period"] >= pd.Timestamp(start_date)]
-    if end_date:
-        df = df[df["reference_period"] <= pd.Timestamp(end_date)]
-    df = df.reset_index(drop=True)
+    # Filter theo [cpi_start_cutoff, cpi_end_cutoff] nếu được set
+    if cpi_start_cutoff is not None or cpi_end_cutoff is not None:
+        n_before = len(df)
+        mask = pd.Series([True] * len(df), index=df.index)
+        if cpi_start_cutoff is not None:
+            mask &= df["reference_period"] >= cpi_start_cutoff
+        if cpi_end_cutoff is not None:
+            mask &= df["reference_period"] <= cpi_end_cutoff
+        df = df[mask].reset_index(drop=True)
+        print(f"  [cpi] Filtered: {n_before} → {len(df)} releases "
+              f"(kept reference_period in [{cpi_start_cutoff.date() if cpi_start_cutoff else 'open'}, "
+              f"{cpi_end_cutoff.date() if cpi_end_cutoff else 'open'}])")
 
     df["fetched_at"] = _now_vn()
 
@@ -238,136 +354,155 @@ def fetch_cpi(out_path: Path, start_date: str | None = None,
 
 
 # ============================================================
-# GDP - VBMA CSV endpoint
+# GDP - VBMA TSV endpoint
 # ============================================================
 
 VBMA_GDP_CSV_URL = "https://vbma.org.vn/csv/markets/tables/en/gdp_danh_nghia_theo_quy.csv"
 
+QUARTER_LABEL_RE = re.compile(r"Q\s*(\d)\s+(\d{4})", re.IGNORECASE)
+
 
 def _parse_vbma_quarter_label(label: str) -> pd.Timestamp | None:
+    """Parse VBMA quarter label e.g. 'Q1 2015' or 'Q4 2025' -> quarter-end Timestamp."""
+    if label is None:
+        return None
     label = str(label).strip()
-    m = re.match(r"Q(\d)[\s/-]+(\d{4})", label)
+    m = QUARTER_LABEL_RE.match(label)
     if m:
         q, year = int(m.group(1)), int(m.group(2))
         if 1 <= q <= 4:
             return pd.Timestamp(year=year, month=q * 3, day=1) + pd.offsets.MonthEnd(0)
-    m = re.match(r"(\d{4})[\s_/-]*Q(\d)", label)
-    if m:
-        year, q = int(m.group(1)), int(m.group(2))
-        if 1 <= q <= 4:
-            return pd.Timestamp(year=year, month=q * 3, day=1) + pd.offsets.MonthEnd(0)
-    m = re.match(r"(\d{1,2})[/-](\d{4})", label)
-    if m:
-        month, year = int(m.group(1)), int(m.group(2))
-        if month in (3, 6, 9, 12):
-            return pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(0)
     return None
+
+
+def _parse_vbma_numeric(val: Any) -> float | None:
+    """Parse VBMA value like '"809,613"' -> 809613.0."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return None
+    s = str(val).strip().strip('"').strip("'").replace(",", "").replace(" ", "")
+    if not s or s.lower() in ("nan", "none", "null", "-"):
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
 
 
 def fetch_gdp(out_path: Path, start_date: str | None = None,
               end_date: str | None = None,
               verify_ssl: bool = False,
               debug_dir: Path | None = None) -> Dict[str, Any]:
-    """Fetch GDP từ VBMA CSV endpoint trực tiếp.
+    """Fetch GDP từ VBMA TSV endpoint.
 
-    Endpoint: /csv/markets/tables/en/gdp_danh_nghia_theo_quy.csv (Nominal GDP by quarter).
-    verify_ssl=False vì certifi không trust VBMA cert chain trên Windows.
+    Format thực (verified từ Get-Content):
+        \\tQ1 2015\\tQ2 2015\\t...\\tQ1 2026          (header row)
+        Nominal Gross Domestic Product\\t"809,613"\\t"970,388"\\t...   (data row 1)
+        "Agriculture, Forestry and Fishery "\\t"99,978"\\t...           (data row 2+)
+
+    Layout B: cols = quarter labels, row đầu = total nominal GDP.
     """
-    print(f"  [gdp] GET CSV: {VBMA_GDP_CSV_URL}")
+    print(f"  [gdp] GET TSV: {VBMA_GDP_CSV_URL}")
     csv_bytes = _http_get_bytes(VBMA_GDP_CSV_URL, verify_ssl=verify_ssl)
     print(f"  [gdp] Received {len(csv_bytes)} bytes")
 
     if debug_dir:
         debug_dir.mkdir(parents=True, exist_ok=True)
         (debug_dir / "gdp_raw.csv").write_bytes(csv_bytes)
-        print(f"  [gdp] Dumped CSV to {debug_dir}/gdp_raw.csv")
+        print(f"  [gdp] Dumped raw bytes to {debug_dir}/gdp_raw.csv")
+
+    # File là TSV (tab-separated). VBMA encode UTF-16 LE với BOM (\xff\xfe),
+    # nên utf-16 phải đứng đầu — utf-8 sẽ raise UnicodeDecodeError, nhưng
+    # latin-1 sẽ "thành công" decode → produce garbage (\x00 padding).
+    bom_hint = ""
+    if csv_bytes.startswith(b"\xff\xfe"):
+        bom_hint = " [BOM detected: UTF-16 LE]"
+    elif csv_bytes.startswith(b"\xfe\xff"):
+        bom_hint = " [BOM detected: UTF-16 BE]"
+    elif csv_bytes.startswith(b"\xef\xbb\xbf"):
+        bom_hint = " [BOM detected: UTF-8]"
+    print(f"  [gdp] First 4 bytes: {csv_bytes[:4]!r}{bom_hint}")
 
     df_raw = None
-    for encoding in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
+    last_err = None
+    for encoding in ("utf-16", "utf-8-sig", "utf-8", "cp1252", "latin-1"):
         try:
-            df_raw = pd.read_csv(io.BytesIO(csv_bytes), encoding=encoding)
-            print(f"  [gdp] Parsed CSV with encoding={encoding}, shape={df_raw.shape}")
-            print(f"  [gdp] Columns: {list(df_raw.columns)[:10]}"
-                  + ("..." if len(df_raw.columns) > 10 else ""))
-            break
-        except (UnicodeDecodeError, pd.errors.ParserError):
+            df_raw = pd.read_csv(
+                io.BytesIO(csv_bytes),
+                sep="\t",
+                encoding=encoding,
+                dtype=str,
+                keep_default_na=False,
+                skip_blank_lines=True,
+            )
+            # Validate: phải có ít nhất 1 column match "Q<n> YYYY".
+            # latin-1 luôn decode được nhưng output garbage → loại bỏ.
+            if any(QUARTER_LABEL_RE.match(str(c).strip()) for c in df_raw.columns):
+                print(f"  [gdp] Parsed TSV with encoding={encoding}, shape={df_raw.shape}")
+                print(f"  [gdp] First 5 columns: {list(df_raw.columns)[:5]}")
+                break
+            else:
+                print(f"  [gdp] encoding={encoding}: parsed but no quarter cols (garbled) → next")
+                df_raw = None
+        except (UnicodeDecodeError, pd.errors.ParserError) as e:
+            last_err = e
+            print(f"  [gdp] encoding={encoding}: {type(e).__name__} → next")
             continue
 
     if df_raw is None or df_raw.empty:
-        raise RuntimeError("Không parse được CSV từ VBMA.")
+        raise RuntimeError(f"Không parse được TSV từ VBMA. Last error: {last_err}")
 
-    rows: List[Tuple[pd.Timestamp, float]] = []
+    # Identify quarter columns (cols whose name matches "Q<n> YYYY")
+    quarter_cols: List[Tuple[str, pd.Timestamp]] = []
+    for col in df_raw.columns:
+        ts = _parse_vbma_quarter_label(str(col))
+        if ts is not None:
+            quarter_cols.append((col, ts))
 
-    # Layout A: first col = quarter labels
-    first_col = df_raw.columns[0]
-    first_col_quarters = [(_parse_vbma_quarter_label(v), v)
-                          for v in df_raw[first_col].astype(str).tolist()]
-    n_quarter_match = sum(1 for ts, _ in first_col_quarters if ts is not None)
+    print(f"  [gdp] Found {len(quarter_cols)} quarter columns "
+          f"(range {quarter_cols[0][1].date() if quarter_cols else None} -> "
+          f"{quarter_cols[-1][1].date() if quarter_cols else None})")
 
-    if n_quarter_match >= 5:
-        print(f"  [gdp] Layout A: {n_quarter_match} quarter labels in first col")
-        gdp_col = None
-        for col in df_raw.columns[1:]:
-            col_lower = str(col).lower()
-            if "nominal" in col_lower and "gross" in col_lower:
-                gdp_col = col
-                break
-        if gdp_col is None:
-            numeric_cols = []
-            for col in df_raw.columns[1:]:
-                try:
-                    vals = pd.to_numeric(df_raw[col], errors="coerce").dropna()
-                    if len(vals) > 0:
-                        numeric_cols.append((col, vals.median()))
-                except Exception:
-                    continue
-            if numeric_cols:
-                gdp_col = max(numeric_cols, key=lambda x: x[1])[0]
-                print(f"  [gdp] No explicit GDP col, picked '{gdp_col}' by max median")
-        if gdp_col is not None:
-            for (ts, _), val in zip(first_col_quarters, df_raw[gdp_col]):
-                if ts is None:
-                    continue
-                try:
-                    v = float(str(val).replace(",", ""))
-                    rows.append((ts, v))
-                except (ValueError, TypeError):
-                    continue
-    else:
-        # Layout B: cols are quarters
-        quarter_cols: List[Tuple[str, pd.Timestamp]] = []
-        for col in df_raw.columns:
-            ts = _parse_vbma_quarter_label(str(col))
-            if ts is not None:
-                quarter_cols.append((col, ts))
-        print(f"  [gdp] Layout B: {len(quarter_cols)} quarter cols")
-        if quarter_cols:
-            label_col = df_raw.columns[0]
-            for _, row in df_raw.iterrows():
-                row_label = str(row[label_col]).lower()
-                if "nominal" in row_label and "gross domestic product" in row_label:
-                    for col, ts in quarter_cols:
-                        try:
-                            v = float(str(row[col]).replace(",", ""))
-                            rows.append((ts, v))
-                        except (ValueError, TypeError):
-                            continue
-                    break
-
-    print(f"  [gdp] Extracted {len(rows)} (quarter, GDP) pairs")
-
-    if not rows:
+    if len(quarter_cols) < 5:
         raise RuntimeError(
-            "Không extract được GDP. Inspect debug CSV."
+            f"Không đủ quarter columns (found {len(quarter_cols)}). "
+            f"Columns: {list(df_raw.columns)[:20]}"
         )
 
-    all_rows: Dict[pd.Timestamp, float] = {}
-    for ts, val in rows:
-        all_rows[ts] = val
+    # First column = row labels (e.g. "Nominal Gross Domestic Product", "Agriculture...")
+    label_col = df_raw.columns[0]
+
+    # Find the "Nominal Gross Domestic Product" row
+    target_row = None
+    for _, row in df_raw.iterrows():
+        row_label = str(row[label_col]).strip().lower().strip('"')
+        if "nominal" in row_label and "gross domestic product" in row_label:
+            target_row = row
+            print(f"  [gdp] Matched label row: '{row[label_col]}'")
+            break
+
+    if target_row is None:
+        # Fallback: first non-empty data row
+        print(f"  [gdp] WARNING: không match 'Nominal Gross Domestic Product'. "
+              f"Available labels (first 10): "
+              f"{[str(r).strip() for r in df_raw[label_col].head(10).tolist()]}")
+        raise RuntimeError("Không tìm thấy row 'Nominal Gross Domestic Product'.")
+
+    rows: List[Tuple[pd.Timestamp, float]] = []
+    for col, ts in quarter_cols:
+        val = _parse_vbma_numeric(target_row[col])
+        if val is not None:
+            rows.append((ts, val))
+
+    print(f"  [gdp] Extracted {len(rows)} (quarter, value) pairs")
+
+    if not rows:
+        raise RuntimeError("Parsed quarters nhưng tất cả values đều null.")
 
     df = pd.DataFrame(
-        [{"reference_period": k, "nominal_gdp_vnd_bil": v} for k, v in sorted(all_rows.items())]
+        [{"reference_period": k, "nominal_gdp_vnd_bil": v}
+         for k, v in sorted(set(rows), key=lambda x: x[0])]
     )
+    df = df.drop_duplicates(subset=["reference_period"], keep="last").reset_index(drop=True)
 
     if start_date:
         df = df[df["reference_period"] >= pd.Timestamp(start_date)]

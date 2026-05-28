@@ -57,11 +57,14 @@ USDVND_SCHEMA = ParquetSchema(name="usdvnd", columns=OHLCV_COLUMNS, primary_key=
 CPI_SCHEMA = ParquetSchema(
     name="cpi",
     columns=(
-        ColumnSpec("reference_period", "datetime64[ns]", nullable=False),
-        ColumnSpec("value_pct", "float64", nullable=False,
-                   description="YoY inflation %"),
+        ColumnSpec("reference_period", "datetime64[ns]", nullable=False,
+                   description="Month-end của tháng tham chiếu"),
         ColumnSpec("release_date", "datetime64[ns]", nullable=False,
-                   description="Conservative: reference_period + 14 ngày"),
+                   description="Date of issue từ NSO press release"),
+        ColumnSpec("title", "object", nullable=True),
+        ColumnSpec("raw_text", "object", nullable=False,
+                   description="Raw body text. Phase 2 sẽ extract MoM, compute YoY"),
+        ColumnSpec("source_url", "object", nullable=True),
         ColumnSpec("fetched_at", "datetime64[ns, Asia/Ho_Chi_Minh]", nullable=False),
     ),
     primary_key=("reference_period",),
