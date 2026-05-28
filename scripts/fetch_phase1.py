@@ -22,6 +22,7 @@ from src.data.fetch_fundamentals import fetch_tcb_fundamentals
 TZ_VN = ZoneInfo("Asia/Ho_Chi_Minh")
 
 START_DATE = "2018-06-04"
+WARMUP_START = "2017-01-01"          
 END_DATE = datetime.now(TZ_VN).date().isoformat()
 
 OUT_DIR = ROOT / "data" / "raw"
@@ -79,14 +80,12 @@ def main() -> int:
     results["gdp"] = _run_one(
         "gdp", fetch_gdp,
         out_path=OUT_DIR / "gdp.parquet",
-        start_date=START_DATE, end_date=END_DATE,
+        start_date=WARMUP_START, end_date=END_DATE,      
     )
-
-    # Channel C — fundamentals
     results["tcb_fundamentals"] = _run_one(
         "tcb_fundamentals", fetch_tcb_fundamentals,
         out_path=OUT_DIR / "tcb_fundamentals.parquet",
-        start_date=START_DATE, end_date=END_DATE,
+        start_date=WARMUP_START, end_date=END_DATE,       
     )
 
     log_path = OUT_DIR / "_fetch_log.json"

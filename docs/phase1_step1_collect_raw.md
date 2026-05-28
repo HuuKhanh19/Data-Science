@@ -9,16 +9,16 @@ Tài liệu này mô tả những gì Step 1 đã làm được và giải thíc
 | | Nội dung |
 | :--- | :--- |
 | **Mục tiêu** | Thu thập trung thực 6 nguồn dữ liệu (2018-06-04 → hiện tại), kiểm định chất lượng, lưu parquet schema-locked |
-| **Input** | API/web ngoài: vnstock (VCI), yfinance, NSO CPI archive, VBMA GDP TSV |
+| **Input** | API/web ngoài: vnstock (VCI), yfinance, IMF Data Portal (SDMX), VBMA GDP TSV |
 | **Output** | 6 file `data/raw/*.parquet` + `data/raw/_fetch_log.json` (nhật ký + thống kê mỗi nguồn) |
 | **Lệnh chạy** | `python scripts/fetch_phase1.py` |
-| **Kết quả** (28/05/2026) | 6/6 OK — `tcb_price` 1994, `vnindex` 2086, `usdvnd` 2077, `cpi` 100, `gdp` 32, `tcb_fundamentals` 32 |
+| **Kết quả** (29/05/2026) | 6/6 OK — `tcb_price` 1994, `vnindex` 2086, `usdvnd` 2078, `cpi` 109, `gdp` 37, `tcb_fundamentals` 33 |
 
 **Nguyên tắc thiết kế** (xuyên suốt mọi module):
 - *Raw-only*: chỉ thu thập, không tính feature (YoY, log-return... để Step 2).
 - *Schema lock*: mỗi output có hợp đồng cột/null/khóa chính, sai là raise ngay.
-- *Anti-leakage từ gốc*: biến chậm lưu kèm `release_date` (ngày công bố thực).
-- *Audit*: mọi bảng có `fetched_at` (giờ VN); CPI lưu cả raw text để truy vết.
+- *Anti-leakage từ gốc*: biến chậm lưu kèm `release_date` (ngày công bố thực hoặc quy ước bảo thủ).
+- *Audit*: mọi bảng có `fetched_at` (giờ VN).
 
 ---
 
@@ -30,7 +30,7 @@ scripts/fetch_phase1.py          ← orchestrator: gọi 3 channel, ghi log + su
     ├── schema.py                ← "hợp đồng dữ liệu": 6 ParquetSchema + .validate()
     ├── validation.py            ← validators chất lượng cho dữ liệu giá
     ├── fetch_prices.py          ← Channel A: tcb_price, vnindex, usdvnd  (daily)
-    ├── fetch_macro.py           ← Channel B: cpi (scrape), gdp (TSV)     (tháng/quý)
+    ├── fetch_macro.py           ← Channel B: cpi (IMF SDMX), gdp (VBMA TSV) (tháng/quý)
     └── fetch_fundamentals.py    ← Channel C: tcb_fundamentals            (quý)
 ```
 
@@ -42,7 +42,7 @@ Mỗi hàm `fetch_*` trả về một **dict báo cáo** đồng nhất: `{statu
 
 ### 3.1 `scripts/fetch_phase1.py` — Orchestrator
 
-Điều phối toàn bộ. `START_DATE = "2018-06-04"` (ngày niêm yết TCB), `END_DATE` = hôm nay (giờ VN).
+Điều phối toàn bộ. `START_DATE = "2018-06-04"` (ngày niêm yết TCB), `WARMUP_START = "2017-01-01"` (lùi ≥4 quý cho YoY của GDP & fundamentals), `END_DATE` = hôm nay (giờ VN).
 
 - **`_run_one(name, fn, **kwargs)`**: wrapper gọi một hàm fetch, in tiến trình, bắt mọi exception và quy về `{status:"error", ...}` để **một nguồn lỗi không làm sập cả pipeline**.
 - **`main()`**: tạo `data/raw/`, lần lượt chạy Channel A → B → C, gom kết quả vào `results`, ghi `_fetch_log.json`, in summary (đếm OK/warning/error). Trả exit code `0` nếu không có error, `1` nếu có (tiện cho tự động hóa ở Phase 2).
@@ -56,7 +56,7 @@ Mỗi hàm `fetch_*` trả về một **dict báo cáo** đồng nhất: `{statu
   1. **Đủ cột**: thiếu cột khai báo → lỗi.
   2. **Ràng buộc non-null**: cột `nullable=False` mà có null → lỗi (vd `close`, `reference_period`).
   3. **Khóa chính không trùng**: vd `date` (giá) hoặc `reference_period` (CPI/GDP/fundamentals) bị lặp → lỗi.
-- 6 schema cụ thể: `TCB_PRICE / VNINDEX / USDVND` dùng chung khung **OHLCV** (`date, open, high, low, close, volume, fetched_at`, khóa `date`); `CPI` (có `raw_text`, `release_date`), `GDP` (`nominal_gdp_vnd_bil`, `release_date`), `TCB_FUNDAMENTALS` (10 cột chỉ số + `release_date`).
+- 6 schema cụ thể: `TCB_PRICE / VNINDEX / USDVND` dùng chung khung **OHLCV** (`date, open, high, low, close, volume, fetched_at`, khóa `date`); `CPI` (`cpi_index`, `release_date`), `GDP`  (`nominal_gdp_vnd_bil`, `release_date`), `TCB_FUNDAMENTALS` (10 cột chỉ số + `release_date`).
 
 ### 3.3 `src/data/validation.py` — Kiểm định chất lượng giá
 
@@ -80,14 +80,14 @@ Ba hàm thu thập:
 
 ### 3.5 `src/data/fetch_macro.py` — Channel B (CPI, GDP)
 
-Có `_http_get` / `_http_get_bytes` (retry, User-Agent, tùy chọn `verify_ssl`).
+Có `_http_get_bytes` (retry, User-Agent, tùy chọn `verify_ssl`) — dùng cho GDP.
 
-**CPI — `fetch_cpi`** (scrape NSO `/en/cpi/`, lưu raw text):
-- **Phân trang**: WordPress dùng `?paged=N` (đã verify từ HTML), lặp page 1..N.
-- **`_parse_nso_page(html)`**: BeautifulSoup tìm `<section class="item">`; mỗi section lấy `title`, span `archive-issue-date` (→ `release_date` qua regex `Date of issue: DD/MM/YYYY`), span `archive-reference-period` (→ tháng tham chiếu). **Lưu `raw_text`** của body, *không* parse số — đúng tinh thần raw-only.
-- **`_parse_reference_period`**: xử lý **2 định dạng** NSO dùng song song — text "April 2026" (bài mới) và số "8/2024" (bài cũ).
-- **Lọc & dừng sớm**: tính `cutoff = start_date − 13 tháng` (đủ tiền sử để Step 2 tính YoY đầu kỳ). Vì NSO liệt kê giảm dần theo ngày, khi trang hiện tại đã cũ hơn cutoff thì **dừng** (tiết kiệm request). Dừng cả khi gặp trang rỗng hoặc toàn bản ghi trùng.
-- Cuối cùng gom `DataFrame`, lọc theo `[cutoff, end_date]`, validate, lưu. `status="ok"` nếu ≥ 50 dòng, ngược lại `"warning"`.
+**CPI — `fetch_cpi`** (IMF Data Portal, chỉ số CPI all-items theo tháng):
+- **Nguồn**: IMF SDMX, dataset `CPI`, key `VNM.CPI._T.IX.M` (Việt Nam, all-items `_T`, dạng index `IX`, tần suất tháng `M`), gốc 2024=100. Gọi qua `sdmx1`: `sdmx.Client("IMF_DATA").data("CPI", key=..., params={"startPeriod": ...})`.
+- **Trích chuỗi**: `sdmx.to_pandas(msg)` → lấy level `TIME_PERIOD` ("2017-M01") map về month-end; cột `cpi_index` ép numeric.
+- **release_date**: nguồn số không có ngày công bố → quy ước `= reference_period (month-end) + 6 ngày` (NSO thực tế ra CPI tháng M vào ~mùng 3–6 tháng M+1 → an toàn leakage).
+- **Warmup**: `startPeriod = start_date − prehistory_months` (mặc định 15) để đủ ≥12 tháng trước phiên đầu panel cho `cpi_yoy` (tính ở Step 2). Lọc `reference_period ∈ [cutoff, end_date]`, validate, lưu (`status="ok"` nếu ≥ 50 dòng).
+- *Vì sao bỏ scrape NSO*: press-release text không đồng nhất (≈49% tháng thiếu MoM/point-YoY) → không đảm bảo full coverage. IMF cho chuỗi số liền mạch; YoY tự tính khớp đúng số chính thức GSO (vd 2026-03: 4.65%).
 
 **GDP — `fetch_gdp`** (VBMA TSV):
 - Tải bytes, **dò encoding**: file là **UTF-16 LE** (BOM `\xff\xfe`) — code thử lần lượt `utf-16, utf-8-sig, utf-8, cp1252, latin-1` và chỉ chấp nhận encoding nào parse ra **cột dạng "Q\<n\> YYYY"** (chặn latin-1 decode "thành công" nhưng ra ký tự rác).
@@ -109,6 +109,6 @@ Có `_http_get` / `_http_get_bytes` (retry, User-Agent, tùy chọn `verify_ssl`
 ## 4. Lưu ý & giới hạn đã biết
 
 - **`.gitignore`**: `data/raw/*.parquet`, `*.csv`, `_fetch_log.json` không commit (regenerate được bằng script). Thư mục `_debug/` và các script chẩn đoán đã được dọn ở bước clean.
-- **Phụ thuộc nguồn ngoài**: CPI/GDP là scrape — nếu NSO/VBMA đổi layout, hàm sẽ raise lỗi rõ ràng (cần cập nhật parser). Đây là rủi ro cần theo dõi khi auto-refit ở Phase 2.
-- **Quy ước `release_date`**: GDP +30 ngày, fundamentals +45 ngày (bảo thủ); CPI dùng *Date of issue* thực. Step 2 dựa vào các mốc này để as-of join.
-- **CPI lưu raw text**: việc trích MoM → ghép YoY là của Step 2, không phải Step 1.
+- **Phụ thuộc nguồn ngoài**: GDP là scrape VBMA (đổi layout → raise rõ ràng, cần cập nhật parser); CPI là API IMF SDMX (ổn định hơn scrape); giá & fundamentals qua vnstock/yfinance. Rủi ro nguồn cần theo dõi khi auto-refit ở Phase 2.
+- **Quy ước `release_date`**: GDP = quý +30 ngày, fundamentals = quý +45 ngày, CPI = month-end +6 ngày — đều bảo thủ. Step 2 dựa vào các mốc này để as-of join chống leakage.
+- **Warmup YoY (A2)**: GDP & fundamentals fetch từ `WARMUP_START = 2017-01-01`. GDP có 2017-Q1 (37 quý). **Fundamentals: VCI không có dữ liệu TCB trước 2018-Q1** (TCB niêm yết 2018) → chỉ tới 2018-Q1 (33 quý); `*_growth_yoy`/`eps_ttm` NaN dẫn đầu tới ~2019 (giới hạn đã biết — không làm xấu thêm vùng dùng được vì technical warmup ~252 phiên cũng tới ~giữa 2019). CPI (IMF) đủ `cpi_yoy` từ đầu.
