@@ -1,4 +1,4 @@
-# Step 2 / Bước 4 (Phase 1) — Tích hợp dữ liệu (Data Integration)
+# Step 4 / Bước 4 (Phase 1) — Tích hợp dữ liệu (Data Integration)
 
 Tài liệu này mô tả Bước 4 đã làm gì và giải thích mã nguồn. Bước 4 hiện thực khâu
 **"tích hợp"** trong pipeline Step 2 của `data.md`: gộp 6 nguồn (sau Bước 3) thành
