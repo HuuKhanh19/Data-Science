@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "step": 10,
+    "tuned_on": "phase0 [0, 1000)",
+    "phase0_start": "2019-06-07",
+    "phase0_end": "2023-06-05",
+    "n_phase0": 1000,
+    "val_frac": 0.15,
+    "val_size": 150,
+    "scheme": "single time-ordered holdout + embargo gap k (KHONG k-fold)",
+    "metric": "val_binary_logloss",
+    "seed": 42,
+    "n_features": 20
+  },
+  "elastic_net": {
+    "fixed": {
+      "penalty": "elasticnet",
+      "solver": "saga",
+      "l1_ratio": 0.5,
+      "max_iter": 5000
+    },
+    "per_horizon": {
+      "1": {
+        "lambda": 0.05689866029018299,
+        "C": 0.02070094964493276,
+        "val_logloss": 0.688733731581595,
+        "n_train": 849,
+        "at_grid_edge": false
+      },
+      "5": {
+        "lambda": 10.0,
+        "C": 0.00011834319526627219,
+        "val_logloss": 0.6806891144899642,
+        "n_train": 845,
+        "at_grid_edge": true
+      },
+      "10": {
+        "lambda": 0.11513953993264481,
+        "C": 0.010339421116087525,
+        "val_logloss": 0.6844939571451845,
+        "n_train": 840,
+        "at_grid_edge": false
+      },
+      "20": {
+        "lambda": 1.5264179671752334,
+        "C": 0.0007893115142886156,
+        "val_logloss": 0.6575611938508208,
+        "n_train": 830,
+        "at_grid_edge": false
+      }
+    }
+  },
+  "lightgbm": {
+    "fixed": {
+      "objective": "binary",
+      "boosting_type": "gbdt",
+      "learning_rate": 0.05,
+      "bagging_freq": 1,
+      "seed": 42
+    },
+    "per_horizon": {
+      "1": {
+        "num_leaves": 31,
+        "min_data_in_leaf": 20,
+        "feature_fraction": 1.0,
+        "bagging_fraction": 0.6,
+        "lambda_l1": 1,
+        "lambda_l2": 0,
+        "n_estimators": 2,
+        "val_logloss": 0.6842621160119261,
+        "n_train": 849
+      },
+      "5": {
+        "num_leaves": 15,
+        "min_data_in_leaf": 50,
+        "feature_fraction": 0.8,
+        "bagging_fraction": 1.0,
+        "lambda_l1": 1,
+        "lambda_l2": 0,
+        "n_estimators": 6,
+        "val_logloss": 0.6720635715432581,
+        "n_train": 845
+      },
+      "10": {
+        "num_leaves": 31,
+        "min_data_in_leaf": 20,
+        "feature_fraction": 0.6,
+        "bagging_fraction": 0.6,
+        "lambda_l1": 0,
+        "lambda_l2": 0,
+        "n_estimators": 5,
+        "val_logloss": 0.679980144958815,
+        "n_train": 840
+      },
+      "20": {
+        "num_leaves": 15,
+        "min_data_in_leaf": 100,
+        "feature_fraction": 1.0,
+        "bagging_fraction": 0.6,
+        "lambda_l1": 0,
+        "lambda_l2": 0,
+        "n_estimators": 12,
+        "val_logloss": 0.6542198330851017,
+        "n_train": 830
+      }
+    }
+  },
+  "lstm": {
+    "note": "frozen tu research_design §5.4, KHONG tune",
+    "config": {
+      "seq_len": 20,
+      "hidden_size": 32,
+      "num_layers": 1,
+      "lstm_dropout": 0.0,
+      "head_dropout": 0.2,
+      "fc_hidden": 16,
+      "loss": "bce",
+      "optimizer": "adam",
+      "learning_rate": 0.001,
+      "batch_size": 32,
+      "max_epochs": 100,
+      "early_stop_patience": 10,
+      "inner_val_frac": 0.15,
+      "seed": 42
+    }
+  }
+}

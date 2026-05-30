@@ -38,7 +38,7 @@ Panel **1994 phiên** (= spine HOSE), `2018-06-04 → 2026-05-28`, **32 cột**:
 | USD/VND (prefix) + cờ | `usdvnd_{open,high,low,close,volume}`, `fx_ffilled` |
 | CPI (L3) | `cpi_reference_period`, `cpi_index`, `cpi_release_date` |
 | GDP (L3) | `gdp_reference_period`, `nominal_gdp_vnd_bil`, `gdp_release_date` |
-| Fundamentals (L4) | `fund_reference_period`, `fund_release_date`, `total_assets_vnd_bil`, `equity_vnd_bil`, `net_interest_income_vnd_bil`, `npl_ratio_pct`, `credit_balance_vnd_bil`, `eps_ttm`, `nim_pct` |
+| Fundamentals (L4) | `fund_reference_period`, `fund_release_date`, `total_assets_vnd_bil`, `equity_vnd_bil`, `net_interest_income_vnd_bil`, `npl_ratio_pct`, `credit_balance_vnd_bil`, `pe_ratio`, `nim_pct` |
 
 **Leading-NaN (cột nguồn chậm):** tất cả = 0, **riêng `npl_ratio_pct` & `nim_pct` = 51**.
 Giải thích: từ phiên đầu spine (2018-06-04), bản fundamentals active là **2018-Q1**

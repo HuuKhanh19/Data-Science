@@ -45,7 +45,7 @@ Tài liệu này mô tả Bước 5 đã làm gì và giải thích mã nguồn.
 | | `cpi_yoy` | $\mathrm{CPI}_t/\mathrm{CPI}_{t-12}-1$ (chuỗi tháng raw) |
 | | `gdp_yoy` | $(\mathrm{GDP}_q-\mathrm{GDP}_{q-4})/\mathrm{GDP}_{q-4}$ (chuỗi quý raw) |
 | **L4** (6) | `total_assets_yoy` | $\mathrm{TA}_q/\mathrm{TA}_{q-4}-1$ |
-| | `pe_ratio` | $P_{t-1}/\text{eps\_ttm}$ (lai daily × quý) |
+| | `pe_ratio` | P/E quý lấy thẳng từ bảng `ratio` provider, `.shift(1)` (as-of như siblings L4) |
 | | `npl_ratio` | `npl_ratio_pct` (trực tiếp) |
 | | `credit_yoy` | $\mathrm{Credit}_q/\mathrm{Credit}_{q-4}-1$ |
 | | `nim` | `nim_pct` (trực tiếp) |
@@ -57,12 +57,12 @@ Tài liệu này mô tả Bước 5 đã làm gì và giải thích mã nguồn.
 | :--- | :--- | :--- |
 | `momentum_3_12` | **252** | cần $P_{t-252}$ → **ràng buộc chặt nhất**, định mốc vùng khả dụng |
 | `total_assets_yoy`, `credit_yoy` | **236** | YoY quý cần 4 kỳ; raw fundamentals chỉ từ 2018-Q1 (TCB niêm yết 2018) → trần data |
-| `npl_ratio`, `nim` | **52** | 51 phiên prefix từ Bước 4 (2018-Q1 thiếu NPL/NIM) + 1 do `.shift(1)` |
+| `npl_ratio`, `nim`, `pe_ratio` | **52** | 51 phiên prefix từ Bước 4 (2018-Q1 thiếu NPL/NIM/P/E) + 1 do `.shift(1)` |
 | `r20`, `trb` | 21 | mẫu số/cửa sổ 20 phiên |
 | `ma5_20`, `bb_position` | 20 | cửa sổ 20 phiên |
 | `rsi_14` | 15 | Wilder warmup 14 + diff |
 | `r10`,`r5`,`r1`,`vnindex_ret`,`fx_logchg` | 11/6/2/2/2 | mẫu số tương ứng |
-| `cpi_yoy`, `gdp_yoy`, `pe_ratio`, `equity_to_assets`, `macd_norm` | 1 | chỉ `.shift(1)` |
+| `cpi_yoy`, `gdp_yoy`, `equity_to_assets`, `macd_norm` | 1 | chỉ `.shift(1)` |
 
 → **`usable_start = 2019-06-07`** (= phiên đầu tiên mọi feature non-NaN, do momentum 252).
 Khớp `research_design.md` "vùng dùng được bắt đầu ~giữa 2019".
@@ -97,7 +97,7 @@ nhất `≤ t-1`. Đây là chỗ `reference_period` cố ý giữ ở Bước 4
 - **MA** = SMA (rolling mean). **Bollinger** dùng **population std** (`ddof=0`).
 - **RSI(14)** = **Wilder smoothing** (`ewm(alpha=1/14, adjust=False)`) — chuẩn Wilder (1978).
 - **MACD** = $(\mathrm{EMA}_{12}-\mathrm{EMA}_{26})/P_{t-1}$, **không** signal line (theo research_design; chia $P_{t-1}$ để stationary).
-- **P/E** lai tần suất: tử `P_{t-1}` daily / mẫu `eps_ttm` quý đã as-of. NPL/NIM lấy thẳng.
+- **P/E**: lấy thẳng từ bảng `ratio` provider (P/E quý), as-of theo `release_date` + `.shift(1)` như siblings L4. (Đổi 30/05/2026: VCI trả `eps_basic_vnd=0` mọi quý nên công thức cũ `P_{t-1}/eps_ttm` bất khả thi; ngoài ra `P_daily/eps_const` ≈ mức giá thô → price-level leak.) NPL/NIM lấy thẳng.
 
 ---
 

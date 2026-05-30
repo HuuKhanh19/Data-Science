@@ -44,7 +44,10 @@ FIELD_MAPPING: Dict[str, tuple] = {
         "loans_and_advances_to_customers",
     ]),
     "net_interest_income_vnd_bil": ("income_statement", ["net_interest_income"]),
-    "eps_ttm": ("income_statement", ["eps_basic_vnd", "eps_basic", "eps_diluted_vnd"]),
+    # P/E lấy TRỰC TIẾP từ bảng ratio (VCI không điền EPS quý vào income_statement —
+    # eps_basic_vnd = 0 mọi quý). Provider P/E sạch, đủ history 2018→nay. Sửa Option 1
+    # 30/05/2026: thay công thức cũ P_daily/eps_ttm (bất khả thi) bằng P/E quý as-of.
+    "pe_ratio": ("ratio", ["pe_ratio"]),
     "npl_ratio_pct": ("ratio", ["npl"]),
     "nim_pct": ("ratio", ["net_interest_margin", "nim"]),
 }
@@ -95,7 +98,7 @@ def _normalize_to_billion(values: Dict[pd.Timestamp, float],
                          field: str) -> Dict[pd.Timestamp, float]:
     if not values:
         return values
-    if field.endswith("_pct") or "eps" in field:
+    if field.endswith("_pct") or "eps" in field or field == "pe_ratio":
         return values
     med = pd.Series(list(values.values())).median()
     if abs(med) > 1e9:
@@ -232,7 +235,7 @@ def fetch_tcb_fundamentals(out_path: Path,
         "reference_period", "release_date",
         "total_assets_vnd_bil", "equity_vnd_bil",
         "net_interest_income_vnd_bil", "interest_earning_assets_vnd_bil",
-        "npl_ratio_pct", "credit_balance_vnd_bil", "eps_ttm", "nim_pct",
+        "npl_ratio_pct", "credit_balance_vnd_bil", "pe_ratio", "nim_pct",
         "fetched_at",
     ]]
 

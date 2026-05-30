@@ -44,6 +44,7 @@ def validate(out: pd.DataFrame) -> None:
     """4-check contract. Fail -> raise ValueError."""
     _check_schema(out)
     _check_features_no_nan(out)
+    _check_features_finite(out)
     _check_label_tail_nan(out)
     _check_date_key(out)
 
@@ -61,6 +62,16 @@ def _check_features_no_nan(out: pd.DataFrame) -> None:
     if n_nan != 0:
         bad = {c: int(out[c].isna().sum()) for c in FEATURES if out[c].isna().any()}
         raise ValueError(f"[features_no_nan] còn NaN trong vùng khả dụng: {bad}")
+
+
+def _check_features_finite(out: pd.DataFrame) -> None:
+    """inf KHÁC NaN — no_nan không bắt được. Chặn ±inf lọt vào model (vd P/0)."""
+    import numpy as np
+    arr = out[FEATURES].to_numpy(dtype=float)
+    if np.isinf(arr).any():
+        bad = {c: int(np.isinf(out[c].to_numpy(dtype=float)).sum())
+               for c in FEATURES if np.isinf(out[c].to_numpy(dtype=float)).any()}
+        raise ValueError(f"[features_finite] còn ±inf: {bad}")
 
 
 def _check_label_tail_nan(out: pd.DataFrame) -> None:

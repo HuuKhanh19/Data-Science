@@ -113,7 +113,7 @@ def build_features(panel: pd.DataFrame, cpi: pd.DataFrame, gdp: pd.DataFrame,
     # ---- L4: cơ bản TCB (mix daily x quarterly), tất cả '<= t-1' ---------------
     f["total_assets_yoy"] = _period_yoy(fund, panel, "total_assets_vnd_bil", 4, "fund_reference_period").shift(1)
     f["credit_yoy"]       = _period_yoy(fund, panel, "credit_balance_vnd_bil", 4, "fund_reference_period").shift(1)
-    f["pe_ratio"]         = P.shift(1) / panel["eps_ttm"].shift(1)
+    f["pe_ratio"]         = panel["pe_ratio"].shift(1)
     f["npl_ratio"]        = panel["npl_ratio_pct"].shift(1)
     f["nim"]              = panel["nim_pct"].shift(1)
     f["equity_to_assets"] = (panel["equity_vnd_bil"] / panel["total_assets_vnd_bil"]).shift(1)
@@ -159,7 +159,7 @@ def check_no_lookahead(panel: pd.DataFrame, cpi: pd.DataFrame, gdp: pd.DataFrame
     p2 = panel.copy()
     last = p2.index[-1]
     for col in ("close", "vnindex_close", "usdvnd_close", "total_assets_vnd_bil",
-                "equity_vnd_bil", "eps_ttm", "npl_ratio_pct", "nim_pct"):
+                "equity_vnd_bil", "pe_ratio", "npl_ratio_pct", "nim_pct"):
         if col in p2.columns and pd.notna(p2.at[last, col]):
             p2.at[last, col] = p2.at[last, col] * 1.5 + 1.0
     pert = build_features(p2, cpi, gdp, fund)

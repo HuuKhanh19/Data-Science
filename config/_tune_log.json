@@ -1,0 +1,50 @@
+{
+  "status": "ok",
+  "meta": {
+    "step": 10,
+    "tuned_on": "phase0 [0, 1000)",
+    "phase0_start": "2019-06-07",
+    "phase0_end": "2023-06-05",
+    "n_phase0": 1000,
+    "val_frac": 0.15,
+    "val_size": 150,
+    "scheme": "single time-ordered holdout + embargo gap k (KHONG k-fold)",
+    "metric": "val_binary_logloss",
+    "seed": 42,
+    "n_features": 20
+  },
+  "per_k": {
+    "1": {
+      "n_train": 849,
+      "en_lambda": 0.056899,
+      "en_lambda_at_grid_edge": false,
+      "en_val_logloss": 0.6887,
+      "lgb_n_estimators": 2,
+      "lgb_val_logloss": 0.6843
+    },
+    "5": {
+      "n_train": 845,
+      "en_lambda": 10.0,
+      "en_lambda_at_grid_edge": true,
+      "en_val_logloss": 0.6807,
+      "lgb_n_estimators": 6,
+      "lgb_val_logloss": 0.6721
+    },
+    "10": {
+      "n_train": 840,
+      "en_lambda": 0.11514,
+      "en_lambda_at_grid_edge": false,
+      "en_val_logloss": 0.6845,
+      "lgb_n_estimators": 5,
+      "lgb_val_logloss": 0.68
+    },
+    "20": {
+      "n_train": 830,
+      "en_lambda": 1.526418,
+      "en_lambda_at_grid_edge": false,
+      "en_val_logloss": 0.6576,
+      "lgb_n_estimators": 12,
+      "lgb_val_logloss": 0.6542
+    }
+  }
+}

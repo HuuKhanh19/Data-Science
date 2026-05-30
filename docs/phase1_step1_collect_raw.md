@@ -101,7 +101,7 @@ Có `_http_get_bytes` (retry, User-Agent, tùy chọn `verify_ssl`) — dùng ch
 - **`_fetch_full_history(symbol)`**: import `vnstock.explorer.vci.financial.Finance` (VCIFinance), gọi `_get_financial_report(stmt_type, period="quarter", lang="en", get_all=True, limit=100)` cho `balance_sheet / ratio / income_statement` → mỗi statement ~31–33 quý. Có **fallback** về method public (4 quý) nếu private call lỗi. (`redirect_stdout` để chặn banner quảng cáo vnstock.)
 - **`FIELD_MAPPING`**: ánh xạ tên feature → `(statement, [item_id ưu tiên])`, vd `credit_balance → loans_and_advances_to_customers_net`, `npl_ratio_pct → npl`, `nim_pct → net_interest_margin`.
 - **`_find_item_row` / `_extract_quarter_series`**: tìm đúng dòng theo `item_id`, trích các cột dạng `YYYY-Qn` thành chuỗi `{quarter_end: value}`.
-- **`_normalize_to_billion`**: nếu giá trị quá lớn (median > 1e9, tức đơn vị VND) thì chia 1e9 về **tỷ VND**; bỏ qua với cột `_pct` và `eps`.
+- **`_normalize_to_billion`**: nếu giá trị quá lớn (median > 1e9, tức đơn vị VND) thì chia 1e9 về **tỷ VND**; bỏ qua với cột `_pct`, `eps` và `pe_ratio` (đều không phải đơn vị tiền).
 - **`fetch_tcb_fundamentals`**: ghép tất cả field theo `reference_period`, cột `interest_earning_assets` để `NA` (vnstock không có), gán `release_date = quý + 45 ngày`, sắp đúng thứ tự cột theo schema, validate, lưu. Báo cáo kèm `null_counts` và `field_sources` (truy vết mỗi feature lấy từ item_id nào).
 
 ---
@@ -111,4 +111,4 @@ Có `_http_get_bytes` (retry, User-Agent, tùy chọn `verify_ssl`) — dùng ch
 - **`.gitignore`**: `data/raw/*.parquet`, `*.csv`, `_fetch_log.json` không commit (regenerate được bằng script). Thư mục `_debug/` và các script chẩn đoán đã được dọn ở bước clean.
 - **Phụ thuộc nguồn ngoài**: GDP là scrape VBMA (đổi layout → raise rõ ràng, cần cập nhật parser); CPI là API IMF SDMX (ổn định hơn scrape); giá & fundamentals qua vnstock/yfinance. Rủi ro nguồn cần theo dõi khi auto-refit ở Phase 2.
 - **Quy ước `release_date`**: GDP = quý +30 ngày, fundamentals = quý +45 ngày, CPI = month-end +6 ngày — đều bảo thủ. Step 2 dựa vào các mốc này để as-of join chống leakage.
-- **Warmup YoY (A2)**: GDP & fundamentals fetch từ `WARMUP_START = 2017-01-01`. GDP có 2017-Q1 (37 quý). **Fundamentals: VCI không có dữ liệu TCB trước 2018-Q1** (TCB niêm yết 2018) → chỉ tới 2018-Q1 (33 quý); `*_growth_yoy`/`eps_ttm` NaN dẫn đầu tới ~2019 (giới hạn đã biết — không làm xấu thêm vùng dùng được vì technical warmup ~252 phiên cũng tới ~giữa 2019). CPI (IMF) đủ `cpi_yoy` từ đầu.
+- **Warmup YoY (A2)**: GDP & fundamentals fetch từ `WARMUP_START = 2017-01-01`. GDP có 2017-Q1 (37 quý). **Fundamentals: VCI không có dữ liệu TCB trước 2018-Q1** (TCB niêm yết 2018) → chỉ tới 2018-Q1 (33 quý); `*_growth_yoy`/`pe_ratio` NaN dẫn đầu tới ~2019 (P/E thiếu 2018-Q1 nên leading-NaN ~52 phiên; giới hạn đã biết — không làm xấu thêm vùng dùng được vì technical warmup ~252 phiên cũng tới ~giữa 2019). CPI (IMF) đủ `cpi_yoy` từ đầu.
