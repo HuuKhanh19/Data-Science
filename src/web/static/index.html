@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TCB Predictability — Phase 1</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { --ink:#1a1a1a; --muted:#6b7280; --line:#e5e7eb; --bg:#fafafa;
+          --pos:#15803d; --neg:#b91c1c; --warn:#b45309; --accent:#1d4ed8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.55 -apple-system,Segoe UI,Roboto,sans-serif;
+         color:var(--ink); background:var(--bg); }
+  .wrap { max-width:980px; margin:0 auto; padding:28px 20px 80px; }
+  h1 { font-size:22px; margin:0 0 2px; }
+  h2 { font-size:17px; margin:34px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  .sub { color:var(--muted); font-size:13px; margin:0 0 18px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px 18px; }
+  .banner { border-left:4px solid var(--accent); }
+  .banner .big { font-size:18px; font-weight:600; }
+  .caveat { border-left:4px solid var(--neg); background:#fef2f2; color:#7f1d1d;
+            font-size:13px; margin:0 0 14px; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th,td { text-align:right; padding:7px 9px; border-bottom:1px solid var(--line); }
+  th:first-child, td:first-child { text-align:left; }
+  th { color:var(--muted); font-weight:600; }
+  .up { color:var(--pos); font-weight:600; } .down { color:var(--neg); font-weight:600; }
+  .yes { color:var(--pos); font-weight:600; } .no { color:var(--muted); }
+  .reject { background:#ecfdf5; }
+  .flag { font-size:11px; color:var(--muted); }
+  .btns { display:flex; gap:6px; margin:0 0 12px; }
+  .btns button { border:1px solid var(--line); background:#fff; border-radius:6px;
+                 padding:5px 12px; cursor:pointer; font-size:13px; }
+  .btns button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .chartbox { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .err { color:var(--muted); font-style:italic; font-size:13px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:720px){ .grid2{ grid-template-columns:1fr; } th,td{ padding:6px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TCB Predictability — Phase 1</h1>
+  <p class="sub">Dự đoán hướng tích lũy giá Techcombank (HOSE) ở k∈{1,5,10,20} phiên ·
+     walk-forward · đánh giá Diebold-Mariano vs baselines</p>
+
+  <div id="banner" class="card banner"><span class="err">Đang tải…</span></div>
+
+  <h2>Dự đoán phiên mới nhất</h2>
+  <div id="caveat" class="card caveat"></div>
+  <div id="inference" class="card"><span class="err">Đang tải…</span></div>
+
+  <h2>Lịch sử dự đoán gần đây vs thực tế</h2>
+  <div class="btns" id="histBtns"></div>
+  <div class="card" id="histTable"><span class="err">Đang tải…</span></div>
+
+  <h2>Predictability theo k</h2>
+  <div class="grid2">
+    <div class="chartbox"><canvas id="predChart"></canvas></div>
+    <div class="card" id="verdictTable"><span class="err">Đang tải…</span></div>
+  </div>
+
+  <h2>Diebold-Mariano (p_adj, Holm trong horizon)</h2>
+  <div class="btns" id="dmBtns"></div>
+  <div class="card" id="dmTable"><span class="err">Đang tải…</span></div>
+
+  <h2>Ablation: chỉ lớp giá L1 vs đủ 20 feature</h2>
+  <div id="ablationWrap">
+    <div class="grid2">
+      <div class="chartbox"><canvas id="ablChart"></canvas></div>
+      <div class="card" id="ablTable"><span class="err">Đang tải…</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const KS = [1,5,10,20], MODELS = {en:"Elastic Net", lgb:"LightGBM", lstm:"LSTM"};
+const BASE = ["persistence","dyn_majority","always_pos"];
+const fmt = (x,d=4)=> x==null ? "—" : Number(x).toFixed(d);
+const pct = x=> x==null ? "—" : (100*x).toFixed(1)+"%";
+const el = id=> document.getElementById(id);
+async function getJSON(u){ const r=await fetch(u); if(!r.ok) throw new Error(r.status); return r.json(); }
+
+function renderBanner(res){
+  const o=res.overall, lbl={no_evidence:"No evidence",limited:"Limited",multi:"Multi-horizon",strong:"Strong"}[o.label]||o.label;
+  el("banner").innerHTML =
+    `<div class="big">Kết luận: ${lbl} — ${o.n_positive_horizons}/4 horizon `+
+    `${o.predictable?'<span class="yes">đạt</span>':'<span class="no">không đạt</span>'} ngưỡng predictable</div>`+
+    `<p class="sub" style="margin:6px 0 0">Trục quyết định = persistence. Lưu ý: không model nào vượt rào `+
+    `<b>always_pos</b> (lớp đa số) ở bất kỳ horizon nào — nhất quán weak-form efficiency.</p>`;
+}
+
+function renderInference(inf){
+  el("caveat").textContent = "⚠ "+inf.caveat;
+  const modeLbl = inf.mode==="live" ? '<span class="up">● live</span> ·' : 'snapshot tĩnh tới';
+  let h=`<p class="sub" style="margin:0 0 10px">${modeLbl} <b>${inf.as_of}</b> · dự đoán chưa hiện thực hóa</p>`;
+  h+=`<table><tr><th>Horizon</th>`+Object.values(MODELS).map(m=>`<th>${m}</th>`).join("")+`</tr>`;
+  for(const row of inf.horizons){
+    h+=`<tr><td>k=${row.k}</td>`+Object.keys(MODELS).map(k=>{
+      const m=row.models[k], cls=m.direction==="UP"?"up":"down";
+      return `<td><span class="${cls}">${m.direction}</span> <span class="flag">${pct(m.proba_up)}</span></td>`;
+    }).join("")+`</tr>`;
+  }
+  el("inference").innerHTML = h+`</table>`;
+}
+
+async function renderHistory(k){
+  [...el("histBtns").children].forEach(b=>b.classList.toggle("on", +b.dataset.k===k));
+  let hist;
+  try{ hist=await getJSON(`/api/inference/history?k=${k}&n=20`); }
+  catch(e){ el("histTable").innerHTML=`<span class="err">Chưa có predictions_model.parquet.</span>`; return; }
+  if(!hist.n){ el("histTable").innerHTML=`<span class="err">Chưa có phiên hiện thực hóa cho k=${k}.</span>`; return; }
+  let h=`<p class="sub" style="margin:0 0 12px">${hist.n} phiên gần nhất · base rate (UP) <b>${pct(hist.base_rate)}</b></p>`;
+  for(const m of Object.keys(MODELS)){
+    const hr=hist.hit_rate[m], near=Math.abs(hr-hist.base_rate)<0.03;
+    h+=`<div style="margin:0 0 10px"><div style="font-size:13px;margin-bottom:4px">`+
+       `${MODELS[m]} — hit-rate <b>${pct(hr)}</b> `+
+       `<span class="flag">${near?'≈ base rate ⇒ không edge':''}</span></div><div>`;
+    for(const r of hist.rows){
+      const ok=r.models[m].hit;
+      h+=`<span title="${r.date}: dự đoán ${r.models[m].direction}, thực tế ${r.actual}" `+
+         `style="display:inline-block;width:14px;height:14px;margin:1px;border-radius:3px;`+
+         `background:${ok?'#16a34a':'#dc2626'}"></span>`;
+    }
+    h+=`</div></div>`;
+  }
+  el("histTable").innerHTML=h+`<p class="sub" style="margin:6px 0 0">■ đúng · ■ sai · phải = mới nhất. `+
+    `Hit-rate quanh base rate là biểu hiện không có tín hiệu (study negative).</p>`;
+}
+function setupHistory(){
+  el("histBtns").innerHTML=KS.map(k=>`<button data-k="${k}">k=${k}</button>`).join("");
+  [...el("histBtns").children].forEach(b=> b.onclick=()=>renderHistory(+b.dataset.k));
+  renderHistory(KS[0]);
+}
+
+function renderVerdict(res){
+  let h=`<table><tr><th>k</th><th>acc best</th><th>rào</th><th>p_adj vs persist</th><th>verdict</th></tr>`;
+  for(const k of KS){
+    const hz=res.horizons[k], c=res.predictability_curve.find(x=>x.k===k);
+    const v=hz.verdict.predictable;
+    h+=`<tr><td>${k}</td><td>${fmt(c.acc_best_model)}</td><td>${fmt(hz.pct_pos_test)}</td>`+
+       `<td>${fmt(c.p_adj_min_vs_persistence)}</td>`+
+       `<td>${v?'<span class="yes">predictable</span>':'<span class="no">—</span>'}</td></tr>`;
+  }
+  el("verdictTable").innerHTML=h+`</table>`;
+}
+
+let predChart, ablChart;
+function lineChart(canvasId, prev, labels, datasets){
+  if(prev) prev.destroy();
+  return new Chart(el(canvasId), { type:"line",
+    data:{ labels, datasets },
+    options:{ responsive:true, plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+      scales:{ y:{ suggestedMin:0.45, suggestedMax:0.7, ticks:{font:{size:11}} },
+               x:{ title:{display:true,text:"horizon k"}, ticks:{font:{size:11}} } } } });
+}
+function renderPredChart(res){
+  const acc=KS.map(k=>res.predictability_curve.find(x=>x.k===k).acc_best_model);
+  const rao=KS.map(k=>res.horizons[k].pct_pos_test);
+  predChart=lineChart("predChart",predChart,KS,[
+    {label:"acc best model",data:acc,borderColor:"#1d4ed8",tension:.2},
+    {label:"rào always_pos",data:rao,borderColor:"#ea580c",borderDash:[5,4],tension:.2},
+    {label:"0.5",data:KS.map(_=>0.5),borderColor:"#9ca3af",borderDash:[2,2],pointRadius:0}
+  ]);
+}
+
+function renderDM(res, k){
+  [...el("dmBtns").children].forEach(b=>b.classList.toggle("on", +b.dataset.k===k));
+  let h=`<table><tr><th>model \\ baseline</th>`+BASE.map(b=>`<th>${b}</th>`).join("")+`</tr>`;
+  for(const m of Object.keys(MODELS)){
+    h+=`<tr><td>${MODELS[m]}</td>`+BASE.map(b=>{
+      const d=res.horizons[k].models[m].dm[b];
+      const flag = d.degenerate?'<span class="flag"> deg</span>':(d.coincident?'<span class="flag"> ≡</span>':'');
+      return `<td class="${d.reject?'reject':''}">${fmt(d.p_adj)}${flag}</td>`;
+    }).join("")+`</tr>`;
+  }
+  h+=`</table><p class="sub" style="margin:8px 0 0">ô tô xanh = reject (p_adj≤0.05) · `+
+     `≡ = baseline trùng (dyn_majority≡always_pos) · deg = DM degenerate (model≡baseline)</p>`;
+  el("dmTable").innerHTML=h;
+}
+function setupDM(res){
+  el("dmBtns").innerHTML=KS.map(k=>`<button data-k="${k}">k=${k}</button>`).join("");
+  [...el("dmBtns").children].forEach(b=> b.onclick=()=>renderDM(res,+b.dataset.k));
+  renderDM(res, KS[0]);
+}
+
+function renderAblation(full, l1){
+  if(!l1){ el("ablationWrap").innerHTML=`<div class="card err">Chưa có results_L1.json — chạy scripts/ablation_l1_phase1.py để xem.</div>`; return; }
+  const accL1=KS.map(k=>l1.predictability_curve.find(x=>x.k===k).acc_best_model);
+  const accF =KS.map(k=>full.predictability_curve.find(x=>x.k===k).acc_best_model);
+  const rao  =KS.map(k=>l1.horizons[k].pct_pos_test);
+  ablChart=lineChart("ablChart",ablChart,KS,[
+    {label:"L1-only",data:accL1,borderColor:"#1d4ed8",tension:.2},
+    {label:"full (20 feat)",data:accF,borderColor:"#15803d",tension:.2},
+    {label:"rào always_pos",data:rao,borderColor:"#ea580c",borderDash:[5,4],tension:.2}
+  ]);
+  let h=`<table><tr><th>k</th><th>acc L1</th><th>acc full</th><th>Δ(full−L1)</th><th>verdict L1 / full</th></tr>`;
+  for(const k of KS){
+    const cL=l1.predictability_curve.find(x=>x.k===k), cF=full.predictability_curve.find(x=>x.k===k);
+    const vL=l1.horizons[k].verdict.predictable, vF=full.horizons[k].verdict.predictable;
+    const d=cF.acc_best_model-cL.acc_best_model;
+    h+=`<tr><td>${k}</td><td>${fmt(cL.acc_best_model)}</td><td>${fmt(cF.acc_best_model)}</td>`+
+       `<td>${(d>=0?'+':'')+fmt(d)}</td><td>${vL?'T':'F'} / ${vF?'T':'F'}</td></tr>`;
+  }
+  el("ablTable").innerHTML=h+`</table><p class="sub" style="margin:8px 0 0">`+
+    `L1-only ≈ full: thêm L2/L3/L4 không cải thiện có ý nghĩa. k=5 positive trùng khít vì do always-+1 lái.</p>`;
+}
+
+(async function(){
+  let full=null;
+  try{ full=await getJSON("/api/results"); renderBanner(full); renderVerdict(full); renderPredChart(full); setupDM(full); }
+  catch(e){ el("banner").innerHTML=`<span class="err">Chưa có results.json (chạy Step 12).</span>`; }
+  try{ renderInference(await getJSON("/api/inference/latest")); }
+  catch(e){ el("inference").innerHTML=`<span class="err">Chưa có predictions_model.parquet (chạy Step 11).</span>`; el("caveat").style.display="none"; }
+  setupHistory();
+  let l1=null; try{ l1=await getJSON("/api/results/ablation"); }catch(e){}
+  if(full) renderAblation(full,l1);
+})();
+</script>
+</body>
+</html>
