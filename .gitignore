@@ -139,3 +139,5 @@ System Volume Information/
 data/raw/_debug/
 diagnose_output.txt
 explorer_output.txt 
+
+reports/
