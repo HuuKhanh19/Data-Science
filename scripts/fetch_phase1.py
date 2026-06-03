@@ -15,8 +15,10 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.data.fetch_prices import fetch_tcb_price, fetch_vnindex, fetch_usdvnd
-from src.data.fetch_macro import fetch_cpi, fetch_gdp
+from src.data.fetch_prices import fetch_tcb_price, fetch_vnindex
+from src.data.fetch_fx import fetch_usdvnd
+from src.data.fetch_cpi import fetch_cpi
+from src.data.fetch_gdp import fetch_gdp
 from src.data.fetch_fundamentals import fetch_tcb_fundamentals
 
 TZ_VN = ZoneInfo("Asia/Ho_Chi_Minh")
