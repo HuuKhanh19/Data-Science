@@ -7,10 +7,6 @@
 - **Phase 2** — tự động hóa toàn bộ quy trình.
 - **Phase 3** — deploy web cho người khác truy cập.
 
-> **Đang ở Phase 1 — đã xong Step 1→7: chuỗi xử lý dữ liệu hoàn tất, `data/processed/features.parquet` (1742 phiên × 20 feature + 4 nhãn, `2019-06-07→2026-05-28`) sẵn sàng cho model.** Tài liệu này chốt phần **dữ liệu** (Step 1→7) và **cầu nối sang mô hình** (Step 8); roadmap mô hình hóa → web local (Step 8→13) ở Section 5. Mạch logic: bài toán → khảo sát nhóm ảnh hưởng → vì sao collect raw → vì sao biến đổi thành feature → tập feature cho model → lộ trình hoàn tất Phase 1.
->
-> Chi tiết từng Step xử lý dữ liệu: `docs/phase1_step{1..7}_*.md`.
-
 ---
 
 ## 1. Khảo sát: nhóm dữ liệu ảnh hưởng đến giá cổ phiếu
