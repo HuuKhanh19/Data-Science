@@ -30,7 +30,7 @@ import pandas as pd
 from src.model.train_infer import (
     CANONICAL, HORIZONS, MODELS, PROBA_COLS, run, validate,
 )
-from src.model.walk_forward import walk_forward_splits
+from model.split import walk_forward_splits
 
 FEATURES = Path("data/processed/features.parquet")
 HPARAMS = Path("config/hparams.json")

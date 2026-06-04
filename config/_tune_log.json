@@ -1,0 +1,210 @@
+{
+  "status": "ok",
+  "output": "C:\\Users\\BKAI\\ducluong\\DrugOptimization\\Data-Science\\config\\hparams.json",
+  "feature_sets": [
+    "l1",
+    "eda",
+    "full"
+  ],
+  "tuned_val_summary": {
+    "l1": {
+      "1": {
+        "en": {
+          "lambda": 0.59636,
+          "val_logloss": 0.6759,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 69,
+          "val_logloss": 0.6668,
+          "val_mcc": 0.1174,
+          "val_balacc": 0.544,
+          "pred_pos_rate": 0.838
+        }
+      },
+      "5": {
+        "en": {
+          "lambda": 4.94171,
+          "val_logloss": 0.6612,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 3,
+          "val_logloss": 0.6644,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        }
+      },
+      "10": {
+        "en": {
+          "lambda": 6.25055,
+          "val_logloss": 0.6,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 22,
+          "val_logloss": 0.6216,
+          "val_mcc": 0.0896,
+          "val_balacc": 0.538,
+          "pred_pos_rate": 0.86
+        }
+      },
+      "20": {
+        "en": {
+          "lambda": 7.90604,
+          "val_logloss": 0.5749,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 41,
+          "val_logloss": 0.5698,
+          "val_mcc": 0.0637,
+          "val_balacc": 0.5297,
+          "pred_pos_rate": 0.857
+        }
+      }
+    },
+    "eda": {
+      "1": {
+        "en": {
+          "lambda": 2.44205,
+          "val_logloss": 0.6758,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 18,
+          "val_logloss": 0.6656,
+          "val_mcc": 0.1458,
+          "val_balacc": 0.5377,
+          "pred_pos_rate": 0.931
+        }
+      },
+      "5": {
+        "en": {
+          "lambda": 7.90604,
+          "val_logloss": 0.6568,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 18,
+          "val_logloss": 0.6454,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        }
+      },
+      "10": {
+        "en": {
+          "lambda": 0.00687,
+          "val_logloss": 0.5375,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 107,
+          "val_logloss": 0.499,
+          "val_mcc": 0.1504,
+          "val_balacc": 0.5143,
+          "pred_pos_rate": 0.994
+        }
+      },
+      "20": {
+        "en": {
+          "lambda": 0.01389,
+          "val_logloss": 0.4742,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 93,
+          "val_logloss": 0.4175,
+          "val_mcc": -0.0635,
+          "val_balacc": 0.4883,
+          "pred_pos_rate": 0.981
+        }
+      }
+    },
+    "full": {
+      "1": {
+        "en": {
+          "lambda": 4.94171,
+          "val_logloss": 0.6767,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 18,
+          "val_logloss": 0.6631,
+          "val_mcc": 0.1823,
+          "val_balacc": 0.5703,
+          "pred_pos_rate": 0.827
+        }
+      },
+      "5": {
+        "en": {
+          "lambda": 0.0569,
+          "val_logloss": 0.6584,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 18,
+          "val_logloss": 0.6368,
+          "val_mcc": 0.1027,
+          "val_balacc": 0.5082,
+          "pred_pos_rate": 0.994
+        }
+      },
+      "10": {
+        "en": {
+          "lambda": 0.01099,
+          "val_logloss": 0.5432,
+          "val_mcc": -0.0579,
+          "val_balacc": 0.4922,
+          "pred_pos_rate": 0.988
+        },
+        "lgb": {
+          "n_est": 81,
+          "val_logloss": 0.4975,
+          "val_mcc": 0.116,
+          "val_balacc": 0.5339,
+          "pred_pos_rate": 0.939
+        }
+      },
+      "20": {
+        "en": {
+          "lambda": 0.01389,
+          "val_logloss": 0.4751,
+          "val_mcc": 0.0,
+          "val_balacc": 0.5,
+          "pred_pos_rate": 1.0
+        },
+        "lgb": {
+          "n_est": 299,
+          "val_logloss": 0.3884,
+          "val_mcc": 0.2193,
+          "val_balacc": 0.5841,
+          "pred_pos_rate": 0.909
+        }
+      }
+    }
+  },
+  "generated_at": "2026-06-04T13:31:47.711373+07:00"
+}

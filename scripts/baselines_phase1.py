@@ -1,63 +1,88 @@
-"""Runner Step 9: features.parquet -> predictions_baseline.parquet (+ _baselines_log.json).
+"""scripts/baselines_phase1.py — runner Step 9 (baselines trên val + test).
 
-Chạy từ gốc repo: python scripts/baselines_phase1.py
+Đọc `data/processed/features.parquet` -> build 3 baseline trên val+test mỗi k ->
+validate -> ghi `data/processed/predictions_baseline.parquet` + `_baselines_log.json`
+(kèm accuracy từng (k,segment) để đối chiếu nhanh). Exit 0 nếu OK, 1 nếu lỗi.
+
+    python scripts/baselines_phase1.py
 """
+from __future__ import annotations
+
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # gốc repo lên sys.path
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
 
-from src.model.baselines import build_baselines, validate, HORIZONS, PRED_COLS
-from src.model.walk_forward import walk_forward_splits
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from src.model import baselines as B  # noqa: E402
 
-IN = Path("data/processed/features.parquet")
-OUT = Path("data/processed/predictions_baseline.parquet")
-LOG = Path("data/processed/_baselines_log.json")
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "data" / "processed" / "features.parquet"
+OUT = ROOT / "data" / "processed" / "predictions_baseline.parquet"
+LOG = ROOT / "data" / "processed" / "_baselines_log.json"
+TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
 
-def _acc(pred: pd.Series, y_true: pd.Series):
-    """Accuracy bỏ qua dòng y_true NaN (đuôi)."""
-    m = y_true.notna().to_numpy()
-    if m.sum() == 0:
-        return None
-    return round(float((pred.to_numpy()[m] == y_true.to_numpy()[m]).mean()), 4)
+def _acc(pred: np.ndarray, y: np.ndarray) -> float:
+    m = ~np.isnan(y)
+    return round(float((pred[m] == y[m]).mean()) * 100, 2) if m.any() else None
 
 
 def main() -> int:
     try:
-        df = pd.read_parquet(IN)
-        out = build_baselines(df)
-        validate(out, df)
+        df = pd.read_parquet(SRC)
+        out = B.build_baselines(df)
+        B.validate(out, df)
+
         OUT.parent.mkdir(parents=True, exist_ok=True)
         out.to_parquet(OUT, index=False)
 
-        log = {"status": "ok", "rows": int(len(out)), "per_k": {}}
-        for k in HORIZONS:
-            sub = out[out["k"] == k]
-            log["per_k"][str(k)] = {
-                "rows": int(len(sub)),
-                "weeks": sum(1 for _ in walk_forward_splits(df["date"], k)),
-                "y_true_nan": int(sub["y_true"].isna().sum()),
-                "acc": {c: _acc(sub[c], sub["y_true"]) for c in PRED_COLS},
-                "dyn_majority_pos_frac": round(float(np.mean(sub["dyn_majority"] == 1.0)), 4),
-            }
-        LOG.write_text(json.dumps(log, ensure_ascii=False, indent=2))
+        # accuracy từng (k, segment) cho từng baseline
+        acc = {}
+        for k in B.HORIZONS:
+            acc[str(k)] = {}
+            for seg in ("val", "test"):
+                g = out[(out["k"] == k) & (out["segment"] == seg)]
+                y = g["y_true"].to_numpy(dtype=float)
+                acc[str(k)][seg] = {
+                    "n_label": int((~np.isnan(y)).sum()),
+                    **{c: _acc(g[c].to_numpy(dtype=float), y) for c in B.PRED_COLS},
+                }
 
-        print(f"[ok] {len(out)} dòng -> {OUT}")
-        for k in HORIZONS:
-            p = log["per_k"][str(k)]
-            a = p["acc"]
-            print(f"  k={k:<2d}: {p['rows']:4d} dòng, {p['weeks']:3d} tuần | "
-                  f"acc pers/dynmaj/+1 = {a['persistence']}/{a['dyn_majority']}/{a['always_pos']}")
+        dyn_eq_always = bool((out["dyn_majority"] == out["always_pos"]).all())
+        log = {
+            "status": "ok",
+            "output": str(OUT),
+            "rows": len(out),
+            "segments": ["val", "test"],
+            "baselines": list(B.PRED_COLS),
+            "accuracy_pct": acc,
+            "dyn_majority_eq_always_pos": dyn_eq_always,
+            "generated_at": datetime.now(TZ).isoformat(),
+        }
+        LOG.write_text(json.dumps(log, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        print(f"[OK] baselines -> {OUT.name} ({len(out)} dòng, val+test x {len(B.HORIZONS)} horizon)")
+        print(f"     dyn_majority == always_pos: {dyn_eq_always}")
+        print(f"     accuracy % (nhãn dùng được):")
+        for k in B.HORIZONS:
+            for seg in ("val", "test"):
+                a = acc[str(k)][seg]
+                print(f"       k={k:<2d} {seg:<4s} n={a['n_label']:<4d}  "
+                      f"persistence={a['persistence']}  "
+                      f"dyn_majority={a['dyn_majority']}  always_pos={a['always_pos']}")
         return 0
-    except Exception as e:  # log lỗi, exit 1 (tiện Phase 2)
+
+    except Exception as e:  # noqa: BLE001
+        err = {"status": "error", "error": f"{type(e).__name__}: {e}",
+               "generated_at": datetime.now(TZ).isoformat()}
         LOG.parent.mkdir(parents=True, exist_ok=True)
-        LOG.write_text(json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False, indent=2))
-        print(f"[error] {e}", file=sys.stderr)
+        LOG.write_text(json.dumps(err, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[ERROR] {err['error']}", file=sys.stderr)
         return 1
 
 

@@ -1,0 +1,539 @@
+{
+  "meta": {
+    "step": "10-tune",
+    "scheme": "80:10:10 time split + embargo k; tune tren VAL; objective=val_logloss",
+    "select_rule": "deploy = argmax val-MCC over (feature_set x model) o Step 11 (KHONG accuracy)",
+    "seed": 42,
+    "en_lambda_grid": [
+      0.0001,
+      10.0,
+      50
+    ],
+    "lgb_grid": {
+      "num_leaves": [
+        15,
+        31,
+        63
+      ],
+      "min_data_in_leaf": [
+        20,
+        50,
+        100
+      ],
+      "feature_fraction": [
+        0.6,
+        0.8,
+        1.0
+      ],
+      "bagging_fraction": [
+        0.6,
+        0.8,
+        1.0
+      ],
+      "lambda_l1": [
+        0,
+        1
+      ],
+      "lambda_l2": [
+        0,
+        1
+      ]
+    }
+  },
+  "lstm": {
+    "frozen": true,
+    "config": {
+      "seq_len": 20,
+      "hidden_size": 32,
+      "num_layers": 1,
+      "lstm_dropout": 0.0,
+      "head_dropout": 0.2,
+      "fc_hidden": 16,
+      "loss": "bce",
+      "optimizer": "adam",
+      "learning_rate": 0.001,
+      "batch_size": 32,
+      "max_epochs": 100,
+      "early_stop_patience": 10,
+      "inner_val_frac": 0.15,
+      "seed": 42
+    },
+    "note": "khong tune; fit o Step 11 cho moi feature_set"
+  },
+  "feature_sets": {
+    "l1": {
+      "features": [
+        "r1",
+        "r5",
+        "r10",
+        "r20"
+      ],
+      "per_k": {
+        "1": {
+          "elastic_net": {
+            "lambda": 0.5963623316594643,
+            "l1_ratio": 0.5,
+            "C": 0.0012037565949827769,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1393,
+            "val": {
+              "logloss": 0.6759309239350321,
+              "acc": 0.5953757225433526,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 15,
+            "min_data_in_leaf": 100,
+            "feature_fraction": 0.6,
+            "bagging_fraction": 0.6,
+            "lambda_l1": 0,
+            "lambda_l2": 0,
+            "n_estimators": 69,
+            "learning_rate": 0.05,
+            "n_train": 1393,
+            "val": {
+              "logloss": 0.6668050954470696,
+              "acc": 0.6069364161849711,
+              "balacc": 0.5440360610263523,
+              "mcc": 0.1173662088136845,
+              "pred_pos_rate": 0.838150289017341
+            }
+          }
+        },
+        "5": {
+          "elastic_net": {
+            "lambda": 4.941713361323838,
+            "l1_ratio": 0.5,
+            "C": 0.0001456867996922358,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1389,
+            "val": {
+              "logloss": 0.6611592129762774,
+              "acc": 0.6390532544378699,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 63,
+            "min_data_in_leaf": 20,
+            "feature_fraction": 1.0,
+            "bagging_fraction": 0.8,
+            "lambda_l1": 1,
+            "lambda_l2": 0,
+            "n_estimators": 3,
+            "learning_rate": 0.05,
+            "n_train": 1389,
+            "val": {
+              "logloss": 0.6644328555094093,
+              "acc": 0.6390532544378699,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          }
+        },
+        "10": {
+          "elastic_net": {
+            "lambda": 6.250551925273976,
+            "l1_ratio": 0.5,
+            "C": 0.00011559672829523535,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1384,
+            "val": {
+              "logloss": 0.5999917345664433,
+              "acc": 0.7865853658536586,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 15,
+            "min_data_in_leaf": 100,
+            "feature_fraction": 0.8,
+            "bagging_fraction": 1.0,
+            "lambda_l1": 0,
+            "lambda_l2": 1,
+            "n_estimators": 22,
+            "learning_rate": 0.05,
+            "n_train": 1384,
+            "val": {
+              "logloss": 0.6216489368921763,
+              "acc": 0.7317073170731707,
+              "balacc": 0.537984496124031,
+              "mcc": 0.08963791958158655,
+              "pred_pos_rate": 0.8597560975609756
+            }
+          }
+        },
+        "20": {
+          "elastic_net": {
+            "lambda": 7.9060432109077015,
+            "l1_ratio": 0.5,
+            "C": 9.205642044070566e-05,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1374,
+            "val": {
+              "logloss": 0.5749403852922211,
+              "acc": 0.8311688311688312,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 15,
+            "min_data_in_leaf": 50,
+            "feature_fraction": 1.0,
+            "bagging_fraction": 0.8,
+            "lambda_l1": 1,
+            "lambda_l2": 0,
+            "n_estimators": 41,
+            "learning_rate": 0.05,
+            "n_train": 1374,
+            "val": {
+              "logloss": 0.5698190362063673,
+              "acc": 0.7532467532467533,
+              "balacc": 0.5297475961538461,
+              "mcc": 0.0636905831706335,
+              "pred_pos_rate": 0.8571428571428571
+            }
+          }
+        }
+      }
+    },
+    "eda": {
+      "features": [
+        "r5",
+        "ma5_20",
+        "momentum_3_12",
+        "rsi_14",
+        "macd_norm",
+        "cpi_yoy",
+        "gdp_yoy",
+        "total_assets_yoy",
+        "pe_ratio",
+        "credit_yoy",
+        "nim",
+        "equity_to_assets"
+      ],
+      "per_k": {
+        "1": {
+          "elastic_net": {
+            "lambda": 2.44205309454865,
+            "l1_ratio": 0.5,
+            "C": 0.0002939637517861039,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1393,
+            "val": {
+              "logloss": 0.6757716765524724,
+              "acc": 0.5953757225433526,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 31,
+            "min_data_in_leaf": 20,
+            "feature_fraction": 0.6,
+            "bagging_fraction": 0.6,
+            "lambda_l1": 0,
+            "lambda_l2": 0,
+            "n_estimators": 18,
+            "learning_rate": 0.05,
+            "n_train": 1393,
+            "val": {
+              "logloss": 0.6656495300746746,
+              "acc": 0.6184971098265896,
+              "balacc": 0.5377253814147018,
+              "mcc": 0.14575642452200416,
+              "pred_pos_rate": 0.930635838150289
+            }
+          }
+        },
+        "5": {
+          "elastic_net": {
+            "lambda": 7.9060432109077015,
+            "l1_ratio": 0.5,
+            "C": 9.106229063033088e-05,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1389,
+            "val": {
+              "logloss": 0.6568453635823741,
+              "acc": 0.6390532544378699,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 31,
+            "min_data_in_leaf": 20,
+            "feature_fraction": 0.8,
+            "bagging_fraction": 0.8,
+            "lambda_l1": 0,
+            "lambda_l2": 1,
+            "n_estimators": 18,
+            "learning_rate": 0.05,
+            "n_train": 1389,
+            "val": {
+              "logloss": 0.6453599747456163,
+              "acc": 0.6390532544378699,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          }
+        },
+        "10": {
+          "elastic_net": {
+            "lambda": 0.006866488450042998,
+            "l1_ratio": 0.5,
+            "C": 0.10522749114893384,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1384,
+            "val": {
+              "logloss": 0.537458387148582,
+              "acc": 0.7865853658536586,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 31,
+            "min_data_in_leaf": 20,
+            "feature_fraction": 0.8,
+            "bagging_fraction": 0.6,
+            "lambda_l1": 0,
+            "lambda_l2": 1,
+            "n_estimators": 107,
+            "learning_rate": 0.05,
+            "n_train": 1384,
+            "val": {
+              "logloss": 0.49898245442308903,
+              "acc": 0.7926829268292683,
+              "balacc": 0.5142857142857142,
+              "mcc": 0.15037201895344998,
+              "pred_pos_rate": 0.9939024390243902
+            }
+          }
+        },
+        "20": {
+          "elastic_net": {
+            "lambda": 0.013894954943731374,
+            "l1_ratio": 0.5,
+            "C": 0.052378869941859696,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1374,
+            "val": {
+              "logloss": 0.47422857279762143,
+              "acc": 0.8311688311688312,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 15,
+            "min_data_in_leaf": 100,
+            "feature_fraction": 1.0,
+            "bagging_fraction": 0.6,
+            "lambda_l1": 1,
+            "lambda_l2": 0,
+            "n_estimators": 93,
+            "learning_rate": 0.05,
+            "n_train": 1374,
+            "val": {
+              "logloss": 0.41754990759369437,
+              "acc": 0.8116883116883117,
+              "balacc": 0.48828125,
+              "mcc": -0.0635263412018201,
+              "pred_pos_rate": 0.9805194805194806
+            }
+          }
+        }
+      }
+    },
+    "full": {
+      "features": [
+        "r1",
+        "r5",
+        "r10",
+        "r20",
+        "ma5_20",
+        "momentum_3_12",
+        "bb_position",
+        "trb",
+        "rsi_14",
+        "macd_norm",
+        "vnindex_ret",
+        "fx_logchg",
+        "cpi_yoy",
+        "gdp_yoy",
+        "total_assets_yoy",
+        "pe_ratio",
+        "npl_ratio",
+        "credit_yoy",
+        "nim",
+        "equity_to_assets"
+      ],
+      "per_k": {
+        "1": {
+          "elastic_net": {
+            "lambda": 4.941713361323838,
+            "l1_ratio": 0.5,
+            "C": 0.0001452684599946271,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1393,
+            "val": {
+              "logloss": 0.6766559003894962,
+              "acc": 0.5953757225433526,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 63,
+            "min_data_in_leaf": 20,
+            "feature_fraction": 1.0,
+            "bagging_fraction": 0.6,
+            "lambda_l1": 0,
+            "lambda_l2": 1,
+            "n_estimators": 18,
+            "learning_rate": 0.05,
+            "n_train": 1393,
+            "val": {
+              "logloss": 0.6631285509608099,
+              "acc": 0.630057803468208,
+              "balacc": 0.5703190013869626,
+              "mcc": 0.18232309164382915,
+              "pred_pos_rate": 0.8265895953757225
+            }
+          }
+        },
+        "5": {
+          "elastic_net": {
+            "lambda": 0.05689866029018299,
+            "l1_ratio": 0.5,
+            "C": 0.01265306425381419,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1389,
+            "val": {
+              "logloss": 0.658391079299559,
+              "acc": 0.6390532544378699,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 63,
+            "min_data_in_leaf": 20,
+            "feature_fraction": 0.6,
+            "bagging_fraction": 1.0,
+            "lambda_l1": 0,
+            "lambda_l2": 0,
+            "n_estimators": 18,
+            "learning_rate": 0.05,
+            "n_train": 1389,
+            "val": {
+              "logloss": 0.6368112106872447,
+              "acc": 0.6449704142011834,
+              "balacc": 0.5081967213114754,
+              "mcc": 0.10265788662437325,
+              "pred_pos_rate": 0.9940828402366864
+            }
+          }
+        },
+        "10": {
+          "elastic_net": {
+            "lambda": 0.010985411419875584,
+            "l1_ratio": 0.5,
+            "C": 0.0657729897392718,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1384,
+            "val": {
+              "logloss": 0.5431833650350809,
+              "acc": 0.774390243902439,
+              "balacc": 0.49224806201550386,
+              "mcc": -0.05787575341027507,
+              "pred_pos_rate": 0.9878048780487805
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 31,
+            "min_data_in_leaf": 20,
+            "feature_fraction": 1.0,
+            "bagging_fraction": 0.8,
+            "lambda_l1": 0,
+            "lambda_l2": 1,
+            "n_estimators": 81,
+            "learning_rate": 0.05,
+            "n_train": 1384,
+            "val": {
+              "logloss": 0.4975097251070985,
+              "acc": 0.774390243902439,
+              "balacc": 0.5338870431893687,
+              "mcc": 0.11604653799984362,
+              "pred_pos_rate": 0.9390243902439024
+            }
+          }
+        },
+        "20": {
+          "elastic_net": {
+            "lambda": 0.013894954943731374,
+            "l1_ratio": 0.5,
+            "C": 0.052378869941859696,
+            "max_iter": 5000,
+            "lambda_at_grid_edge": false,
+            "n_train": 1374,
+            "val": {
+              "logloss": 0.47506368383080594,
+              "acc": 0.8311688311688312,
+              "balacc": 0.5,
+              "mcc": 0.0,
+              "pred_pos_rate": 1.0
+            }
+          },
+          "lightgbm": {
+            "num_leaves": 15,
+            "min_data_in_leaf": 20,
+            "feature_fraction": 0.6,
+            "bagging_fraction": 1.0,
+            "lambda_l1": 1,
+            "lambda_l2": 0,
+            "n_estimators": 299,
+            "learning_rate": 0.05,
+            "n_train": 1374,
+            "val": {
+              "logloss": 0.38842732918925343,
+              "acc": 0.8181818181818182,
+              "balacc": 0.5841346153846154,
+              "mcc": 0.2192645048267573,
+              "pred_pos_rate": 0.9090909090909091
+            }
+          }
+        }
+      }
+    }
+  }
+}

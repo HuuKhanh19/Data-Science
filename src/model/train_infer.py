@@ -38,7 +38,7 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
-from src.model.walk_forward import (
+from model.split import (
     build_window,
     feature_columns,
     walk_forward_splits,

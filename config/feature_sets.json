@@ -1,0 +1,62 @@
+{
+  "l1": [
+    "r1",
+    "r5",
+    "r10",
+    "r20"
+  ],
+  "eda": [
+    "r5",
+    "ma5_20",
+    "momentum_3_12",
+    "rsi_14",
+    "macd_norm",
+    "cpi_yoy",
+    "gdp_yoy",
+    "total_assets_yoy",
+    "pe_ratio",
+    "credit_yoy",
+    "nim",
+    "equity_to_assets"
+  ],
+  "full": [
+    "r1",
+    "r5",
+    "r10",
+    "r20",
+    "ma5_20",
+    "momentum_3_12",
+    "bb_position",
+    "trb",
+    "rsi_14",
+    "macd_norm",
+    "vnindex_ret",
+    "fx_logchg",
+    "cpi_yoy",
+    "gdp_yoy",
+    "total_assets_yoy",
+    "pe_ratio",
+    "npl_ratio",
+    "credit_yoy",
+    "nim",
+    "equity_to_assets"
+  ],
+  "_meta": {
+    "source": "EDA train-only (Step 8)",
+    "drop_collinear": [
+      "bb_position",
+      "r10",
+      "r20"
+    ],
+    "drop_weak": [
+      "fx_logchg",
+      "npl_ratio",
+      "r1",
+      "trb",
+      "vnindex_ret"
+    ],
+    "collinear_threshold": 0.85,
+    "weak_quantile": 0.25,
+    "note": "eda là GIẢ THUYẾT từ train; val chọn bộ thắng ở Step 10. Có thể chỉnh tay."
+  }
+}
