@@ -15,18 +15,12 @@ dist/
 .eggs/
 
 # ============================================================
-# Virtual environments
+# Virtual environments  (conda env 'ds' nằm ngoài repo)
 # ============================================================
 venv/
 env/
 .venv/
-.env/
 ENV/
-
-# ============================================================
-# Conda
-# ============================================================
-# (Conda env 'ds' nằm ngoài repo nên không cần ignore env folder)
 
 # ============================================================
 # Caches & test artifacts
@@ -45,7 +39,6 @@ htmlcov/
 # Jupyter
 # ============================================================
 .ipynb_checkpoints/
-*.ipynb_checkpoints
 
 # ============================================================
 # IDE / Editor
@@ -58,7 +51,7 @@ htmlcov/
 .history/
 
 # ============================================================
-# OS
+# OS  (server Windows, đôi khi xem từ macOS)
 # ============================================================
 .DS_Store
 .DS_Store?
@@ -68,6 +61,8 @@ htmlcov/
 Thumbs.db
 ehthumbs.db
 desktop.ini
+$RECYCLE.BIN/
+System Volume Information/
 
 # ============================================================
 # Secrets / environment
@@ -78,29 +73,30 @@ desktop.ini
 *.key
 *.pem
 credentials.json
+.streamlit/secrets.toml
 
 # ============================================================
-# Data files (regeneratable từ scripts/fetch_phase1.py)
+# Logs  (gom _*_log.json runner mọi nơi: _split_log, _tune_log, _fetch_log, ...)
 # ============================================================
-# Raw data — ignore parquet & json log, keep folder structure
-data/raw/*.parquet
-data/raw/*.csv
-data/raw/_fetch_log.json
-data/raw/*.log
+*.log
+logs/
+**/_*_log.json
 
-# Processed features & intermediate
-data/processed/
-data/cache/
-data/interim/
-
-# Keep folder skeletons (commit .gitkeep nếu muốn lưu structure)
+# ============================================================
+# Data — tái tạo bằng scripts/*_phase1.py. Bỏ NỘI DUNG, giữ skeleton.
+# (ignore cả dir thì !.gitkeep vô hiệu → phải dùng dir/* rồi chừa .gitkeep)
+# ============================================================
+data/raw/*
 !data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
 !data/processed/.gitkeep
+data/cache/
 
 # ============================================================
-# Models & training artifacts
+# Models & training artifacts — tái tạo bằng ĐV5 (freeze refit-on-all)
 # ============================================================
-models/
 *.pkl
 *.joblib
 *.pt
@@ -109,9 +105,10 @@ models/
 *.onnx
 checkpoints/
 runs/
+models/
 
 # ============================================================
-# Database (cho web app sau này)
+# Database (Phase 2+)
 # ============================================================
 *.db
 *.sqlite
@@ -119,25 +116,23 @@ runs/
 *.sqlite3-journal
 
 # ============================================================
-# Logs
+# Web outputs
+#   - app_data.json: tái tạo bằng web_build/web_app  → ignore
+#   - tcb_dashboard.html: deliverable TỰ CHỨA, mở mọi máy → GIỮ (commit)
+#     (bỏ comment dòng dưới nếu muốn coi nó là build-output thay vì deliverable)
 # ============================================================
-*.log
-logs/
+web/app_data.json
+# web/tcb_dashboard.html
 
 # ============================================================
-# Streamlit
-# ============================================================
-.streamlit/secrets.toml
-
-# ============================================================
-# OS / Windows specific (vì server là Windows)
-# ============================================================
-$RECYCLE.BIN/
-System Volume Information/
-
 # Debug dumps & diagnostic outputs
-data/raw/_debug/
+# ============================================================
 diagnose_output.txt
-explorer_output.txt 
+explorer_output.txt
+data/raw/_debug/
 
-reports/
+# ============================================================
+# GIỮ trong repo (không ignore): toàn bộ src/, scripts/, config/*.json,
+#   data.md, requirements.txt, notebook/, reports/ (results.json + figures + eda),
+#   deploy/manifest.json, web/index.html, web/tcb_dashboard.html
+# ============================================================
