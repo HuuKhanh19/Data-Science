@@ -1,0 +1,331 @@
+{
+  "rule": "argmax val-MCC; loại pred_pos_rate>=0.97 trừ khi tất cả degenerate; tiebreak val-balacc",
+  "1": {
+    "feature_set": "full",
+    "model": "lightgbm",
+    "val_mcc": 0.1823,
+    "val_balacc": 0.5703,
+    "val_pred_pos_rate": 0.827,
+    "all_degenerate": false,
+    "candidates": [
+      {
+        "feature_set": "full",
+        "model": "lightgbm",
+        "val_mcc": 0.1823,
+        "val_balacc": 0.5703,
+        "val_pred_pos_rate": 0.827,
+        "degenerate": false
+      },
+      {
+        "feature_set": "eda",
+        "model": "lightgbm",
+        "val_mcc": 0.1458,
+        "val_balacc": 0.5377,
+        "val_pred_pos_rate": 0.931,
+        "degenerate": false
+      },
+      {
+        "feature_set": "l1",
+        "model": "lstm",
+        "val_mcc": 0.1312,
+        "val_balacc": 0.5143,
+        "val_pred_pos_rate": 0.988,
+        "degenerate": true
+      },
+      {
+        "feature_set": "l1",
+        "model": "lightgbm",
+        "val_mcc": 0.1174,
+        "val_balacc": 0.544,
+        "val_pred_pos_rate": 0.838,
+        "degenerate": false
+      },
+      {
+        "feature_set": "l1",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "lstm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "lstm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      }
+    ]
+  },
+  "5": {
+    "feature_set": "l1",
+    "model": "lstm",
+    "val_mcc": 0.0663,
+    "val_balacc": 0.5307,
+    "val_pred_pos_rate": 0.728,
+    "all_degenerate": false,
+    "candidates": [
+      {
+        "feature_set": "full",
+        "model": "lightgbm",
+        "val_mcc": 0.1027,
+        "val_balacc": 0.5082,
+        "val_pred_pos_rate": 0.994,
+        "degenerate": true
+      },
+      {
+        "feature_set": "l1",
+        "model": "lstm",
+        "val_mcc": 0.0663,
+        "val_balacc": 0.5307,
+        "val_pred_pos_rate": 0.728,
+        "degenerate": false
+      },
+      {
+        "feature_set": "l1",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "l1",
+        "model": "lightgbm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "lightgbm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "lstm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "lstm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      }
+    ]
+  },
+  "10": {
+    "feature_set": "full",
+    "model": "lightgbm",
+    "val_mcc": 0.116,
+    "val_balacc": 0.5339,
+    "val_pred_pos_rate": 0.939,
+    "all_degenerate": false,
+    "candidates": [
+      {
+        "feature_set": "eda",
+        "model": "lightgbm",
+        "val_mcc": 0.1504,
+        "val_balacc": 0.5143,
+        "val_pred_pos_rate": 0.994,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "lightgbm",
+        "val_mcc": 0.116,
+        "val_balacc": 0.5339,
+        "val_pred_pos_rate": 0.939,
+        "degenerate": false
+      },
+      {
+        "feature_set": "l1",
+        "model": "lightgbm",
+        "val_mcc": 0.0896,
+        "val_balacc": 0.538,
+        "val_pred_pos_rate": 0.86,
+        "degenerate": false
+      },
+      {
+        "feature_set": "l1",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "lstm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "elastic_net",
+        "val_mcc": -0.0579,
+        "val_balacc": 0.4922,
+        "val_pred_pos_rate": 0.988,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "lstm",
+        "val_mcc": -0.0579,
+        "val_balacc": 0.4922,
+        "val_pred_pos_rate": 0.988,
+        "degenerate": true
+      },
+      {
+        "feature_set": "l1",
+        "model": "lstm",
+        "val_mcc": -0.1162,
+        "val_balacc": 0.4396,
+        "val_pred_pos_rate": 0.762,
+        "degenerate": false
+      }
+    ]
+  },
+  "20": {
+    "feature_set": "full",
+    "model": "lightgbm",
+    "val_mcc": 0.2193,
+    "val_balacc": 0.5841,
+    "val_pred_pos_rate": 0.909,
+    "all_degenerate": false,
+    "candidates": [
+      {
+        "feature_set": "full",
+        "model": "lightgbm",
+        "val_mcc": 0.2193,
+        "val_balacc": 0.5841,
+        "val_pred_pos_rate": 0.909,
+        "degenerate": false
+      },
+      {
+        "feature_set": "l1",
+        "model": "lightgbm",
+        "val_mcc": 0.0637,
+        "val_balacc": 0.5297,
+        "val_pred_pos_rate": 0.857,
+        "degenerate": false
+      },
+      {
+        "feature_set": "l1",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "lstm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "elastic_net",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "full",
+        "model": "lstm",
+        "val_mcc": 0.0,
+        "val_balacc": 0.5,
+        "val_pred_pos_rate": 1.0,
+        "degenerate": true
+      },
+      {
+        "feature_set": "eda",
+        "model": "lightgbm",
+        "val_mcc": -0.0635,
+        "val_balacc": 0.4883,
+        "val_pred_pos_rate": 0.981,
+        "degenerate": true
+      },
+      {
+        "feature_set": "l1",
+        "model": "lstm",
+        "val_mcc": -0.0815,
+        "val_balacc": 0.4468,
+        "val_pred_pos_rate": 0.604,
+        "degenerate": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TCB · Dự đoán hướng giá</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+:root{
+  --ink:#0b0d10; --ink2:#13161c; --ink3:#1b1f27; --raise:#222732;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --text:#ece9e3; --muted:#888f9b; --faint:#5c636e;
+  --gold:#d8a657; --gold-dim:#9a7a3f;
+  --up:#4ad6a0; --down:#ff6f61; --amber:#e7b24c; --red:#ff5d52; --neutral:#6b7280;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--text);
+  font-family:"Archivo",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(1200px 600px at 12% -8%, rgba(216,166,87,.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(74,214,160,.05), transparent 55%),
+    var(--ink);
+}
+body::after{ /* grain */
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.035;z-index:99;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.wrap{max-width:1240px;margin:0 auto;padding:30px 26px 60px}
+
+/* ── header ── */
+header{display:flex;align-items:flex-end;justify-content:space-between;
+  gap:24px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:22px}
+.brand h1{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(34px,5vw,58px);
+  letter-spacing:-.02em;line-height:.9;margin:0;color:var(--text)}
+.brand h1 .dot{color:var(--gold)}
+.brand .sub{margin-top:8px;color:var(--muted);font-size:13.5px;letter-spacing:.02em}
+.brand .sub b{color:var(--text);font-weight:600}
+.hgroup{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;
+  padding:6px 12px;border:1px solid var(--line2);border-radius:999px;color:var(--muted);
+  font-family:"JetBrains Mono",monospace;letter-spacing:.02em}
+.pill .b{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.summary{font-family:"Fraunces",serif;font-size:17px;color:var(--text);text-align:right;max-width:340px}
+.summary .n{color:var(--gold);font-weight:600}
+
+/* ── tabs ── */
+.tabs{display:flex;gap:10px;margin:26px 0 22px;flex-wrap:wrap}
+.tab{flex:1 1 0;min-width:150px;cursor:pointer;background:var(--ink2);
+  border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+  transition:.18s;position:relative;overflow:hidden}
+.tab:hover{border-color:var(--line2);transform:translateY(-1px)}
+.tab.active{border-color:var(--gold-dim);background:linear-gradient(180deg,rgba(216,166,87,.10),var(--ink2))}
+.tab .k{font-family:"Fraunces",serif;font-weight:600;font-size:26px;letter-spacing:-.01em}
+.tab .k small{font-size:13px;color:var(--muted);font-weight:400;margin-left:4px}
+.tab .m{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);margin-top:6px;
+  text-transform:uppercase;letter-spacing:.04em}
+.tab .reldot{position:absolute;top:14px;right:14px;width:9px;height:9px;border-radius:50%}
+
+/* ── layout ── */
+.grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+@media(max-width:940px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--ink2);border:1px solid var(--line);border-radius:16px}
+.panel .hd{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px 0;font-family:"JetBrains Mono",monospace;font-size:11.5px;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--faint)}
+#chart{height:430px;width:100%;padding:6px 10px 14px}
+
+/* ── forward card ── */
+.fwd{padding:20px 20px 22px}
+.fwd .lab{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--faint)}
+.fwd .dir{font-family:"Fraunces",serif;font-weight:900;font-size:54px;line-height:1;margin:8px 0 2px;
+  display:flex;align-items:center;gap:12px}
+.fwd .dir.up{color:var(--up)} .fwd .dir.down{color:var(--down)}
+.fwd .arrow{font-size:40px}
+.fwd .meta{color:var(--muted);font-size:13px;margin-top:4px;font-family:"JetBrains Mono",monospace}
+.prob{margin-top:16px}
+.prob .bar{height:9px;border-radius:999px;background:var(--ink3);overflow:hidden;border:1px solid var(--line)}
+.prob .fill{height:100%;border-radius:999px;transition:width .5s ease}
+.prob .cap{display:flex;justify-content:space-between;margin-top:7px;font-size:11.5px;
+  color:var(--muted);font-family:"JetBrains Mono",monospace}
+.badge{margin-top:18px;display:flex;gap:10px;align-items:flex-start;padding:12px 13px;
+  border-radius:11px;border:1px solid var(--line);background:var(--ink3);font-size:13px;line-height:1.45}
+.badge .ic{width:10px;height:10px;border-radius:50%;margin-top:5px;flex:0 0 auto}
+.badge .t{color:var(--muted)} .badge .t b{color:var(--text)}
+
+/* ── reliability ── */
+.rel{padding:6px 18px 20px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.metric{background:var(--ink3);border:1px solid var(--line);border-radius:11px;padding:12px 13px}
+.metric .l{font-size:10.5px;color:var(--faint);font-family:"JetBrains Mono",monospace;
+  text-transform:uppercase;letter-spacing:.05em}
+.metric .v{font-family:"Fraunces",serif;font-weight:600;font-size:25px;margin-top:3px;letter-spacing:-.01em}
+.metric .sub{font-size:11px;color:var(--muted);font-family:"JetBrains Mono",monospace;margin-top:2px}
+.cm{display:grid;grid-template-columns:auto 1fr 1fr;gap:5px;margin-top:16px;font-family:"JetBrains Mono",monospace;font-size:12px}
+.cm .h{color:var(--faint);font-size:10px;display:flex;align-items:center;justify-content:center;text-transform:uppercase}
+.cm .c{background:var(--ink3);border:1px solid var(--line);border-radius:8px;padding:9px 4px;text-align:center}
+.cm .c .n{font-family:"Fraunces",serif;font-size:19px;font-weight:600}
+.cm .c.good{border-color:rgba(74,214,160,.3)} .cm .c.bad{border-color:rgba(255,111,97,.25)}
+.cm .rl{color:var(--faint);font-size:10px;display:flex;align-items:center;text-transform:uppercase}
+
+.legend{display:flex;gap:18px;flex-wrap:wrap;padding:0 18px 16px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-family:"JetBrains Mono",monospace;font-size:11px}
+.legend i{width:10px;height:10px;display:inline-block;border-radius:2px}
+
+footer{margin-top:26px;color:var(--faint);font-size:12px;line-height:1.6;
+  border-top:1px solid var(--line);padding-top:18px}
+footer b{color:var(--muted)}
+.loading{text-align:center;padding:80px 0;color:var(--muted);font-family:"JetBrains Mono",monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="app" class="loading">đang tải dữ liệu…</div>
+</div>
+
+<script>
+const FMT = n => (n==null||Number.isNaN(n)) ? "—" : Number(n).toFixed(3);
+const PCT = n => (n==null) ? "—" : (n*100).toFixed(1)+"%";
+const SIGNED = n => (n==null||Number.isNaN(n)) ? "—" : (n>=0?"+":"")+Number(n).toFixed(3);
+const COLOR = {up:"#4ad6a0",down:"#ff6f61",amber:"#e7b24c",red:"#ff5d52",muted:"#6b7280"};
+const BADGECOLOR = {weak:COLOR.amber, unreliable:COLOR.red, unknown:COLOR.muted};
+
+let DATA=null, CUR="1", chart=null;
+
+async function boot(){
+  try{
+    const r = await fetch("app_data.json",{cache:"no-store"});
+    DATA = await r.json();
+  }catch(e){
+    document.getElementById("app").innerHTML =
+      "<div class='loading'>Không đọc được <code>app_data.json</code>.<br>"+
+      "Hãy chạy qua server tĩnh: <code>python scripts/web_serve_phase1.py</code> "+
+      "(fetch không chạy với file://).</div>";
+    return;
+  }
+  render();
+}
+
+function render(){
+  const m = DATA.meta;
+  const app = document.getElementById("app");
+  app.classList.remove("loading");
+  app.innerHTML = `
+   <header>
+     <div class="brand">
+       <h1>TCB<span class="dot">.</span></h1>
+       <div class="sub">Techcombank · HOSE — dự đoán <b>hướng biến động tích lũy</b> giá đóng cửa điều chỉnh</div>
+     </div>
+     <div class="hgroup">
+       <span class="pill"><span class="b"></span>Phase ${m.phase} · khoá ${m.freeze_date}</span>
+       <span class="pill">giá mới nhất ${m.last_price_date} · ${m.price_unit}</span>
+       <div class="summary"><span class="n">${m.n_horizons_signal}/4</span> horizon có tín hiệu test thật</div>
+     </div>
+   </header>
+   <div class="tabs" id="tabs"></div>
+   <div class="grid">
+     <div class="panel">
+       <div class="hd"><span>Giá TCB &amp; dự đoán quá khứ (out-of-sample)</span><span id="chartk"></span></div>
+       <div id="chart"></div>
+       <div class="legend">
+         <span><i style="background:${COLOR.up}"></i>đoán đúng</span>
+         <span><i style="background:${COLOR.down}"></i>đoán sai</span>
+         <span><i style="background:#d8a657"></i>giá đóng cửa</span>
+         <span style="color:var(--faint)">▲ đoán TĂNG · ▼ đoán GIẢM · vạch = ranh giới test (held-out)</span>
+       </div>
+     </div>
+     <div style="display:flex;flex-direction:column;gap:18px">
+       <div class="panel"><div class="fwd" id="fwd"></div></div>
+       <div class="panel"><div class="hd"><span>Độ tin cậy trên test (chạm 1 lần)</span></div><div class="rel" id="rel"></div></div>
+     </div>
+   </div>
+   <footer id="foot"></footer>
+  `;
+  buildTabs();
+  select(CUR);
+  document.getElementById("foot").innerHTML =
+    `<b>Phương pháp:</b> ${m.note_phaseA} &nbsp;·&nbsp; Dự đoán quá khứ là kết quả OOS của mô hình ` +
+    `fit trên train (val+test). Dự đoán "phiên tới" do mô hình deploy (refit toàn bộ data tĩnh, đóng băng) sinh ra. ` +
+    `Phán quyết dựa <b>balanced-acc / MCC / so với always_pos</b>, không dựa accuracy thô (test mất cân bằng lớp).`;
+  window.addEventListener("resize",()=>chart&&chart.resize());
+}
+
+function buildTabs(){
+  const t = document.getElementById("tabs");
+  t.innerHTML = "";
+  ["1","5","10","20"].forEach(k=>{
+    const h = DATA.horizons[k];
+    const c = BADGECOLOR[h.badge.tier]||COLOR.muted;
+    const el = document.createElement("div");
+    el.className = "tab"+(k===CUR?" active":"");
+    el.onclick = ()=>select(k);
+    el.innerHTML = `<span class="reldot" style="background:${c}"></span>
+      <div class="k">${k}<small>phiên</small></div>
+      <div class="m">${h.deploy.model} · ${h.deploy.feature_set}</div>`;
+    t.appendChild(el);
+  });
+}
+
+function select(k){
+  CUR=k;
+  document.querySelectorAll(".tab").forEach((el,i)=>
+    el.classList.toggle("active",["1","5","10","20"][i]===k));
+  drawChart(k); drawForward(k); drawRel(k);
+}
+
+/* ── chart ── */
+function drawChart(k){
+  const h = DATA.horizons[k];
+  const price = DATA.price;
+  const dates = price.map(p=>p.date);
+  const closes = price.map(p=>p.close);
+  const priceByDate = Object.fromEntries(price.map(p=>[p.date,p.close]));
+
+  const right=[], wrong=[];
+  (h.past||[]).forEach(p=>{
+    const y = priceByDate[p.date]; if(y==null) return;
+    const sym = p.pred===1 ? "triangle" : "path://M0,0 L10,0 L5,9 Z"; // ▲ / ▼
+    const item={value:[p.date,y],symbol:sym,symbolSize:p.segment==="test"?9:7,
+      symbolRotate:0, itemStyle:{opacity:p.segment==="test"?1:.5},
+      _pred:p.pred,_yt:p.y_true,_seg:p.segment};
+    (p.correct?right:wrong).push(item);
+  });
+
+  // default zoom: vùng có dự đoán (val+test) — khoảng 380 phiên cuối
+  const span = Math.min(dates.length, 400);
+  const startPct = Math.max(0, (dates.length-span)/dates.length*100);
+
+  const fwd = h.forward||{};
+  const lastDate = dates[dates.length-1], lastClose = closes[closes.length-1];
+  const fwdMark = (fwd.pred!=null)?[{
+    coord:[lastDate,lastClose],
+    symbol: fwd.pred===1?"triangle":"path://M0,0 L10,0 L5,9 Z",
+    symbolSize:16, itemStyle:{color:fwd.pred===1?COLOR.up:COLOR.down,
+      borderColor:"#fff",borderWidth:1, opacity:.95},
+    label:{show:true,position:"top",formatter:`+${k} · ${(fwd.proba*100).toFixed(0)}%`,
+      color:fwd.pred===1?COLOR.up:COLOR.down,fontFamily:"JetBrains Mono",fontSize:11}
+  }]:[];
+
+  const boundary = h.val_test_boundary;
+  document.getElementById("chartk").textContent =
+    `k=${k} · ${h.deploy.model}/${h.deploy.feature_set}`;
+
+  if(!chart) chart = echarts.init(document.getElementById("chart"),null,{renderer:"canvas"});
+  chart.setOption({
+    backgroundColor:"transparent",
+    animationDuration:500,
+    grid:{left:46,right:18,top:18,bottom:64},
+    tooltip:{trigger:"axis",backgroundColor:"#13161c",borderColor:"rgba(255,255,255,.12)",
+      textStyle:{color:"#ece9e3",fontFamily:"JetBrains Mono",fontSize:12},
+      formatter:(ps)=>{
+        let s=`<b>${ps[0].axisValue}</b><br/>`;
+        ps.forEach(p=>{
+          if(p.seriesName==="giá") s+=`giá: ${Number(p.data[1]??p.data).toFixed(2)}<br/>`;
+          else if(p.data&&p.data._pred!=null){
+            s+=`${p.data._pred===1?"▲ đoán TĂNG":"▼ đoán GIẢM"} · `+
+               `thực ${p.data._yt===1?"TĂNG":"GIẢM"} · ${p.data._yt===p.data._pred?"<span style='color:#4ad6a0'>đúng</span>":"<span style='color:#ff6f61'>sai</span>"} (${p.data._seg})`;
+          }
+        });
+        return s;
+      }},
+    xAxis:{type:"category",data:dates,boundaryGap:false,
+      axisLine:{lineStyle:{color:"rgba(255,255,255,.15)"}},
+      axisLabel:{color:"#888f9b",fontFamily:"JetBrains Mono",fontSize:10,
+        formatter:v=>v.slice(0,7)},
+      axisTick:{show:false}},
+    yAxis:{type:"value",scale:true,
+      splitLine:{lineStyle:{color:"rgba(255,255,255,.05)"}},
+      axisLabel:{color:"#888f9b",fontFamily:"JetBrains Mono",fontSize:10},
+      name:"nghìn VND",nameTextStyle:{color:"#5c636e",fontSize:10,align:"left"}},
+    dataZoom:[
+      {type:"inside",start:startPct,end:100},
+      {type:"slider",start:startPct,end:100,height:20,bottom:24,
+        borderColor:"rgba(255,255,255,.1)",backgroundColor:"rgba(255,255,255,.02)",
+        fillerColor:"rgba(216,166,87,.12)",
+        dataBackground:{lineStyle:{color:"rgba(255,255,255,.2)"},areaStyle:{color:"rgba(255,255,255,.05)"}},
+        textStyle:{color:"#5c636e",fontFamily:"JetBrains Mono",fontSize:9}}
+    ],
+    series:[
+      {name:"giá",type:"line",data:closes,showSymbol:false,smooth:.15,
+        lineStyle:{color:"#d8a657",width:1.6},
+        areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,
+          [{offset:0,color:"rgba(216,166,87,.18)"},{offset:1,color:"rgba(216,166,87,0)"}])},
+        markLine: boundary?{symbol:"none",silent:true,
+          data:[{xAxis:boundary,label:{show:true,formatter:"test ▸",color:"#888f9b",
+            fontFamily:"JetBrains Mono",fontSize:10,position:"insideEndTop"},
+            lineStyle:{color:"rgba(255,255,255,.25)",type:"dashed",width:1}}]}:undefined,
+        markPoint: fwdMark.length?{data:fwdMark}:undefined},
+      {name:"đúng",type:"scatter",data:right,itemStyle:{color:COLOR.up},z:5},
+      {name:"sai",type:"scatter",data:wrong,itemStyle:{color:COLOR.down},z:5},
+    ]
+  },true);
+}
+
+/* ── forward card ── */
+function drawForward(k){
+  const h=DATA.horizons[k], f=h.forward||{};
+  const el=document.getElementById("fwd");
+  if(f.error||f.pred==null){
+    el.innerHTML=`<div class="lab">Dự đoán phiên +${k}</div>
+      <div class="meta" style="margin-top:14px;color:var(--down)">không sinh được dự đoán (${f.error||"thiếu model"})</div>`;
+    return;
+  }
+  const up=f.pred===1;
+  const b=h.badge;
+  el.innerHTML=`
+    <div class="lab">Dự đoán cho ${f.horizon_label} &nbsp;(≈ ${f.target_date_est})</div>
+    <div class="dir ${up?"up":"down"}"><span class="arrow">${up?"▲":"▼"}</span>${f.direction}</div>
+    <div class="meta">từ phiên ${f.from_date} · so với giá hiện tại</div>
+    <div class="prob">
+      <div class="bar"><div class="fill" style="width:${(f.proba*100).toFixed(0)}%;
+        background:${up?COLOR.up:COLOR.down}"></div></div>
+      <div class="cap"><span>P(TĂNG) = ${(f.proba*100).toFixed(1)}%</span><span>ngưỡng 50%</span></div>
+    </div>
+    <div class="badge"><span class="ic" style="background:${BADGECOLOR[b.tier]}"></span>
+      <span class="t"><b>${b.label}</b><br>${explain(b.tier)}</span></div>`;
+}
+function explain(tier){
+  if(tier==="weak") return "Mô hình nhỉnh hơn ngẫu nhiên một chút ở horizon này — chỉ nên dùng tham khảo.";
+  if(tier==="unreliable") return "Trên test mô hình không vượt phép đoán tầm thường (luôn TĂNG). Không nên dựa vào dự đoán này.";
+  return "Chưa có đánh giá test cho horizon này.";
+}
+
+/* ── reliability ── */
+function drawRel(k){
+  const h=DATA.horizons[k], r=h.reliability;
+  const el=document.getElementById("rel");
+  if(!r){el.innerHTML=`<div class="metric" style="margin-top:14px">chưa có kết quả test</div>`;return;}
+  const t=r.test, c=t.confusion;
+  const alwaysAcc = r.base_pos_rate;
+  el.innerHTML=`
+    <div class="metrics">
+      <div class="metric"><div class="l">balanced-acc</div><div class="v">${FMT(t.balacc)}</div>
+        <div class="sub">0.5 = ngẫu nhiên</div></div>
+      <div class="metric"><div class="l">MCC</div><div class="v">${SIGNED(t.mcc)}</div>
+        <div class="sub">0 = vô dụng</div></div>
+      <div class="metric"><div class="l">AUC</div><div class="v">${t.auc==null?"—":FMT(t.auc)}</div>
+        <div class="sub">xếp hạng xác suất</div></div>
+      <div class="metric"><div class="l">acc thô</div><div class="v">${PCT(t.acc)}</div>
+        <div class="sub">always_pos = ${PCT(alwaysAcc)}</div></div>
+    </div>
+    <div class="cm">
+      <div class="h"></div><div class="h">thực TĂNG</div><div class="h">thực GIẢM</div>
+      <div class="rl">đoán&nbsp;TĂNG</div><div class="c good"><span class="n">${c.tp}</span></div><div class="c bad"><span class="n">${c.fp}</span></div>
+      <div class="rl">đoán&nbsp;GIẢM</div><div class="c bad"><span class="n">${c.fn}</span></div><div class="c good"><span class="n">${c.tn}</span></div>
+    </div>
+    <div class="metric" style="margin-top:16px">
+      <div class="l">so với always_pos</div>
+      <div class="v" style="color:${t.balacc>alwaysAcc?COLOR.up:COLOR.down}">
+        ${r.beats_always_pos?"vượt":"không vượt"}</div>
+      <div class="sub">n_test=${r.n_test} · val-MCC=${SIGNED(r.val_mcc)} · pos đoán=${PCT(t.pred_pos_rate)}</div>
+    </div>`;
+}
+
+boot();
+</script>
+</body>
+</html>
