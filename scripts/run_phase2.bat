@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
-REM Phase 2 - cap nhat inference real-time (model FROZEN, KHONG refit).
-REM Task Scheduler, hang ngay 04:00 VN.
+REM Phase 2 + Phase 3 - cap nhat hang ngay + auto-publish GitHub Pages.
+REM Task Scheduler 04:00 VN. Model FROZEN, KHONG refit.
 REM ============================================================
 setlocal
 chcp 65001 >nul
@@ -23,6 +23,12 @@ echo.>> "%LOG%"
 echo ================= RUN %DATE% %TIME% ================= >> "%LOG%"
 "%PY%" -u scripts\phase2_update.py >> "%LOG%" 2>&1
 set "RC=%ERRORLEVEL%"
-echo ----------------- EXIT %RC% ----------------- >> "%LOG%"
+echo ----------------- phase2 EXIT %RC% ----------------- >> "%LOG%"
+
+REM Chi publish khi cap nhat du lieu thanh cong
+if "%RC%"=="0" (
+  "%PY%" -u scripts\publish_phase3.py >> "%LOG%" 2>&1
+  echo ----------------- publish EXIT %ERRORLEVEL% ----------------- >> "%LOG%"
+)
 
 endlocal & exit /b %RC%
