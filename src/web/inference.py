@@ -97,10 +97,37 @@ def _badge(rel: dict | None) -> dict:
     return {"tier": "weak", "label": "tín hiệu yếu (hơi trên ngẫu nhiên)", "color": "amber"}
 
 
+# ──────────────────────────── forward track record (Phase 2, live) ────────────────────────────
+def _forward_track(log: pd.DataFrame, k: int, last_n: int = 40) -> dict:
+    """Track record các dự đoán FORWARD đã đến hạn cho horizon k (đọc từ forward_log).
+
+    Khác hẳn 'past' (OOS fit-train, tĩnh) và 'forward' (dự đoán phiên kế chưa quan sát):
+    đây là các dự đoán forward CŨ nay đã đủ k phiên → chấm được bằng giá thật. Bằng
+    chứng tích luỹ theo thời gian, model vẫn đóng băng.
+    """
+    g = log[log["k"] == k].sort_values("from_date")
+    done = g[g["correct"].notna()]
+    resolved = [{
+        "from_date": d.strftime("%Y-%m-%d"),
+        "target_date": td.strftime("%Y-%m-%d") if pd.notna(td) else None,
+        "pred": int(p), "y_true": int(yt), "correct": bool(c), "proba": round(float(pr), 4),
+    } for d, td, p, yt, c, pr in zip(done["from_date"], done["target_date"],
+                                     done["pred"], done["y_true"], done["correct"], done["proba"])]
+    n_res = len(done)
+    n_cor = int(done["correct"].sum()) if n_res else 0
+    return {
+        "n_resolved": n_res, "n_correct": n_cor,
+        "hit_rate": round(n_cor / n_res, 4) if n_res else None,
+        "n_pending": int(g["correct"].isna().sum()),
+        "resolved": resolved[-last_n:],
+    }
+
+
 # ──────────────────────────── assemble ────────────────────────────
 def assemble_app_data(features_pq: Path, price_pq: Path, predictions_pq: Path,
                       results_json: Path, deploy_dir: Path,
-                      freeze_date: str = "2026-05-29", phase: int = 1) -> dict:
+                      freeze_date: str = "2026-05-29", phase: int = 1,
+                      forward_log_pq: Path | None = None) -> dict:
     """Ráp toàn bộ payload cho frontend."""
     df = pd.read_parquet(features_pq)
     df["date"] = pd.to_datetime(df["date"])
@@ -110,6 +137,13 @@ def assemble_app_data(features_pq: Path, price_pq: Path, predictions_pq: Path,
     preds["date"] = pd.to_datetime(preds["date"])
     results = _read_json(results_json)
     manifest = _read_json(deploy_dir / "manifest.json")
+
+    fwlog = None
+    if forward_log_pq is not None and Path(forward_log_pq).exists():
+        fwlog = pd.read_parquet(forward_log_pq)
+        for c in ("from_date", "target_date"):
+            if c in fwlog.columns:
+                fwlog[c] = pd.to_datetime(fwlog[c])
 
     # giá: full history (adjusted close), nghìn VND
     price = price.dropna(subset=["close"]).sort_values("date")
@@ -166,6 +200,7 @@ def assemble_app_data(features_pq: Path, price_pq: Path, predictions_pq: Path,
             "reliability": rel,
             "badge": _badge(rel),
             "forward": forward,
+            "track": (_forward_track(fwlog, k) if fwlog is not None else None),
             "past": past,
             "val_test_boundary": val_test_boundary,
         }

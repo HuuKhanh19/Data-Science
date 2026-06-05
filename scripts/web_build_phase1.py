@@ -33,6 +33,7 @@ PRICE = ROOT / "data" / "raw" / "tcb_price.parquet"
 PREDS = PROC / "predictions_model.parquet"
 RESULTS = ROOT / "reports" / "results.json"
 DEPLOY = ROOT / "deploy"
+FWLOG = ROOT / "data" / "forward_log.parquet"
 OUT = ROOT / "web" / "app_data.json"
 LOG = PROC / "_web_build_log.json"
 TZ = ZoneInfo("Asia/Ho_Chi_Minh")
@@ -55,7 +56,8 @@ def main() -> int:
     log = {"step": "web-build", "ts": datetime.now(TZ).isoformat()}
     try:
         app = W.assemble_app_data(FEATURES, PRICE, PREDS, RESULTS, DEPLOY,
-                                  freeze_date=FREEZE_DATE, phase=1)
+                                  freeze_date=FREEZE_DATE, phase=2,
+                                  forward_log_pq=FWLOG)
         W.validate(app)
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(_clean(app), ensure_ascii=False, indent=2), encoding="utf-8")
