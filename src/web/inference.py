@@ -177,6 +177,21 @@ def assemble_app_data(features_pq: Path, price_pq: Path, predictions_pq: Path,
             if tests:
                 val_test_boundary = min(tests)
 
+        # live track (model deploy) cho đoạn SAU frozen-eval — overlay lên chart
+        live = []
+        if fwlog is not None:
+            g = fwlog[fwlog["k"] == k].sort_values("from_date")
+            for d, pr, prb, yt, c in zip(g["from_date"], g["pred"], g["proba"],
+                                         g["y_true"], g["correct"]):
+                resolved = pd.notna(c)
+                live.append({
+                    "date": d.strftime("%Y-%m-%d"), "pred": int(pr),
+                    "proba": round(float(prb), 4),
+                    "y_true": (int(yt) if pd.notna(yt) else None),
+                    "correct": (bool(c) if resolved else None),
+                    "resolved": bool(resolved),
+                })
+
         forward = None
         if man:
             try:
@@ -202,6 +217,7 @@ def assemble_app_data(features_pq: Path, price_pq: Path, predictions_pq: Path,
             "forward": forward,
             "track": (_forward_track(fwlog, k) if fwlog is not None else None),
             "past": past,
+            "live": live,
             "val_test_boundary": val_test_boundary,
         }
 

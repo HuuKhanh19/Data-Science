@@ -170,7 +170,7 @@ function render(){
          <span><i style="background:${COLOR.up}"></i>đoán đúng</span>
          <span><i style="background:${COLOR.down}"></i>đoán sai</span>
          <span><i style="background:#d8a657"></i>giá đóng cửa</span>
-         <span style="color:var(--faint)">▲ đoán TĂNG · ▼ đoán GIẢM · vạch = mốc bắt đầu dữ liệu kiểm định</span>
+         <span style="color:var(--faint)">▲ đoán TĂNG · ▼ đoán GIẢM · vạch = mốc bắt đầu dữ liệu kiểm định · viền sáng = live (model đang chạy) · rỗng = đang chờ</span>
        </div>
      </div>
      <div style="display:flex;flex-direction:column;gap:18px">
@@ -233,6 +233,20 @@ function drawChart(k){
     (p.correct?right:wrong).push(item);
   });
 
+  // live track (model deploy) — phân biệt với frozen-eval: viền sáng / rỗng nếu đang chờ
+  const pastDates = new Set((h.past||[]).map(p=>p.date));
+  const liveRight=[], liveWrong=[], livePending=[]; let liveStart=null;
+  (h.live||[]).forEach(p=>{
+    if(pastDates.has(p.date)) return;
+    const y = priceByDate[p.date]; if(y==null) return;
+    if(liveStart===null) liveStart=p.date;
+    const sym = p.pred===1 ? "triangle" : "path://M0,0 L10,0 L5,9 Z";
+    const base={value:[p.date,y],symbol:sym,symbolSize:9,_pred:p.pred,_yt:p.y_true,_seg:"live",_pending:!p.resolved};
+    if(!p.resolved) livePending.push({...base,itemStyle:{color:"transparent",borderColor:"#9aa0aa",borderWidth:1.4,opacity:.9}});
+    else if(p.correct) liveRight.push({...base,itemStyle:{color:COLOR.up,borderColor:"#ece9e3",borderWidth:1.6}});
+    else liveWrong.push({...base,itemStyle:{color:COLOR.down,borderColor:"#ece9e3",borderWidth:1.6}});
+  });
+
   // default zoom: vùng có dự đoán (val+test) — khoảng 380 phiên cuối
   const span = Math.min(dates.length, 400);
   const startPct = Math.max(0, (dates.length-span)/dates.length*100);
@@ -252,6 +266,9 @@ function drawChart(k){
   document.getElementById("chartk").textContent =
     `k=${k} · ${h.deploy.model}/${h.deploy.feature_set}`;
 
+  const mlData=[];
+  if(boundary) mlData.push({xAxis:boundary,label:{show:true,formatter:"test ▸",color:"#888f9b",fontFamily:"JetBrains Mono",fontSize:10,position:"insideEndTop"},lineStyle:{color:"rgba(255,255,255,.25)",type:"dashed",width:1}});
+  if(liveStart) mlData.push({xAxis:liveStart,label:{show:true,formatter:"live ▸",color:"#d8a657",fontFamily:"JetBrains Mono",fontSize:10,position:"insideEndTop"},lineStyle:{color:"rgba(216,166,87,.45)",type:"dashed",width:1}});
   if(!chart) chart = echarts.init(document.getElementById("chart"),null,{renderer:"canvas"});
   chart.setOption({
     backgroundColor:"transparent",
@@ -264,8 +281,9 @@ function drawChart(k){
         ps.forEach(p=>{
           if(p.seriesName==="giá") s+=`giá: ${Number(p.data[1]??p.data).toFixed(2)}<br/>`;
           else if(p.data&&p.data._pred!=null){
-            s+=`${p.data._pred===1?"▲ đoán TĂNG":"▼ đoán GIẢM"} · `+
-               `thực ${p.data._yt===1?"TĂNG":"GIẢM"} · ${p.data._yt===p.data._pred?"<span style='color:#4ad6a0'>đúng</span>":"<span style='color:#ff6f61'>sai</span>"} (${p.data._seg})`;
+            const dir=p.data._pred===1?"▲ đoán TĂNG":"▼ đoán GIẢM";
+            if(p.data._pending){ s+=`${dir} · đang chờ đủ phiên (live)`; }
+            else s+=`${dir} · thực ${p.data._yt===1?"TĂNG":"GIẢM"} · ${p.data._yt===p.data._pred?"<span style='color:#4ad6a0'>đúng</span>":"<span style='color:#ff6f61'>sai</span>"} (${p.data._seg})`;
           }
         });
         return s;
@@ -292,13 +310,13 @@ function drawChart(k){
         lineStyle:{color:"#d8a657",width:1.6},
         areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,
           [{offset:0,color:"rgba(216,166,87,.18)"},{offset:1,color:"rgba(216,166,87,0)"}])},
-        markLine: boundary?{symbol:"none",silent:true,
-          data:[{xAxis:boundary,label:{show:true,formatter:"test ▸",color:"#888f9b",
-            fontFamily:"JetBrains Mono",fontSize:10,position:"insideEndTop"},
-            lineStyle:{color:"rgba(255,255,255,.25)",type:"dashed",width:1}}]}:undefined,
+        markLine: mlData.length?{symbol:"none",silent:true,data:mlData}:undefined,
         markPoint: fwdMark.length?{data:fwdMark}:undefined},
       {name:"đúng",type:"scatter",data:right,itemStyle:{color:COLOR.up},z:5},
       {name:"sai",type:"scatter",data:wrong,itemStyle:{color:COLOR.down},z:5},
+      {name:"đúng (live)",type:"scatter",data:liveRight,z:6},
+      {name:"sai (live)",type:"scatter",data:liveWrong,z:6},
+      {name:"chờ",type:"scatter",data:livePending,z:6},
     ]
   },true);
 }
