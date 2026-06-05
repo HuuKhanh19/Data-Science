@@ -122,11 +122,6 @@ footer b{color:var(--muted)}
 <body>
 <div class="wrap">
   <div id="app" class="loading">đang tải dữ liệu…</div>
-  <footer style="max-width:1180px;margin:18px auto 44px;padding:16px 20px;border-top:1px solid rgba(255,255,255,.08);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:1.75;color:#8a8f98">
-    <b style="color:#e7b24c">⚠ Công cụ nghiên cứu học thuật — KHÔNG phải khuyến nghị hay lời khuyên đầu tư.</b><br>
-    Mô hình cho thấy khả năng dự đoán hướng giá TCB <b>rất yếu (weak-form)</b>; các con số chỉ minh hoạ phương pháp, không đảm bảo kết quả tương lai. Đầu tư có rủi ro — bạn tự chịu trách nhiệm với quyết định của mình.<br>
-    Dữ liệu &amp; dự đoán tự cập nhật hằng ngày · model đóng băng từ Phase 1, không refit · nguồn giá: vnstock (HOSE).
-  </footer>
 </div>
 
 <script>
@@ -164,26 +159,25 @@ function render(){
        <div class="sub">Techcombank · HOSE — dự đoán <b>hướng biến động tích lũy</b> giá đóng cửa điều chỉnh</div>
      </div>
      <div class="hgroup">
-       <span class="pill"><span class="b"></span>Phase ${m.phase} · khoá ${m.freeze_date}</span>
        <span class="pill">giá mới nhất ${m.last_price_date} · ${m.price_unit}</span>
-       <div class="summary"><span class="n">${m.n_horizons_signal}/4</span> horizon có tín hiệu test thật</div>
+       <div class="summary"><span class="n">${m.n_horizons_signal}/4</span> khung có tín hiệu thật</div>
      </div>
    </header>
    <div class="tabs" id="tabs"></div>
    <div class="grid">
      <div class="panel">
-       <div class="hd"><span>Giá TCB &amp; dự đoán quá khứ (out-of-sample)</span><span id="chartk"></span></div>
+       <div class="hd"><span>Giá TCB &amp; dự đoán trong quá khứ</span><span id="chartk"></span></div>
        <div id="chart"></div>
        <div class="legend">
          <span><i style="background:${COLOR.up}"></i>đoán đúng</span>
          <span><i style="background:${COLOR.down}"></i>đoán sai</span>
          <span><i style="background:#d8a657"></i>giá đóng cửa</span>
-         <span style="color:var(--faint)">▲ đoán TĂNG · ▼ đoán GIẢM · vạch = ranh giới test (held-out)</span>
+         <span style="color:var(--faint)">▲ đoán TĂNG · ▼ đoán GIẢM · vạch = mốc bắt đầu dữ liệu kiểm định</span>
        </div>
      </div>
      <div style="display:flex;flex-direction:column;gap:18px">
        <div class="panel"><div class="fwd" id="fwd"></div></div>
-       <div class="panel"><div class="hd"><span>Độ tin cậy trên test (chạm 1 lần)</span></div><div class="rel" id="rel"></div></div>
+       <div class="panel"><div class="hd"><span>Độ tin cậy trên dữ liệu kiểm định</span></div><div class="rel" id="rel"></div></div>
        <div class="panel"><div class="hd"><span>Track record live · forward đã kiểm chứng</span><span id="trackk"></span></div><div class="track" id="track"></div></div>
      </div>
    </div>
@@ -192,9 +186,11 @@ function render(){
   buildTabs();
   select(CUR);
   document.getElementById("foot").innerHTML =
-    `<b>Phương pháp:</b> ${m.note_phaseA} &nbsp;·&nbsp; Dự đoán quá khứ là kết quả OOS của mô hình ` +
-    `fit trên train (val+test). Dự đoán "phiên tới" do mô hình deploy (refit toàn bộ data tĩnh, đóng băng) sinh ra. ` +
-    `Phán quyết dựa <b>balanced-acc / MCC / so với always_pos</b>, không dựa accuracy thô (test mất cân bằng lớp).`;
+    `<b style="color:#e7b24c">⚠ Công cụ nghiên cứu — KHÔNG phải khuyến nghị hay lời khuyên đầu tư.</b> ` +
+    `Mô hình cho thấy khả năng dự đoán hướng giá TCB rất yếu; các con số chỉ minh hoạ, không đảm bảo kết quả tương lai. ` +
+    `Đầu tư có rủi ro — bạn tự chịu trách nhiệm với quyết định của mình.<br><br>` +
+    `<b>Cách đọc:</b> "dự đoán quá khứ" là kết quả trên dữ liệu mô hình chưa từng thấy; "dự đoán phiên tới" do mô hình đã cố định (không cập nhật lại) sinh ra; ` +
+    `đánh giá bằng balanced-accuracy / MCC thay vì accuracy thô vì dữ liệu mất cân bằng lớp. Cập nhật tự động hằng ngày · nguồn giá: vnstock (HOSE).`;
   window.addEventListener("resize",()=>chart&&chart.resize());
 }
 
